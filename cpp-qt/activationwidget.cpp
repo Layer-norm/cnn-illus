@@ -90,10 +90,11 @@ void ActivationCanvas::paintEvent(QPaintEvent *)
         if (range > 1.5)  return 0.5;
         return 0.25;
     };
-    double xStep = adaptiveStep(xRange);
-    double yStep = adaptiveStep(yRange);
+    double step = adaptiveStep(std::min(xRange, yRange));
+    double xStep = step;
+    double yStep = step;
 
-    QFont gridFont("Consolas", 8);
+    QFont gridFont("Consolas", 15);
     painter.setFont(gridFont);
 
     // Vertical grid lines + x tick labels
@@ -135,9 +136,9 @@ void ActivationCanvas::paintEvent(QPaintEvent *)
     if (zeroX >= 0 && zeroX <= W) painter.drawLine(zeroX, 0, zeroX, H);
     if (zeroY >= 0 && zeroY <= H) painter.drawLine(0, zeroY, W, zeroY);
 
-    // Origin label
+    // Origin label — offset so not blocked by axes
     painter.setPen(m_tickColor);
-    painter.drawText(zeroX - 10, zeroY + 14, 20, 14, Qt::AlignCenter, "0");
+    painter.drawText(zeroX + 5, zeroY + 5, 18, 16, Qt::AlignLeft | Qt::AlignTop, "0");
 
     // ── Function curves ──
     if (!m_funcs || m_funcs->isEmpty()) return;
