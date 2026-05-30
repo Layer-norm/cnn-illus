@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CNN 卷积神经网络原理展示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e1a;--bg2:#111827;--bg3:#1a2035;--bg4:#232b42;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --accent:#3b82f6;--accent2:#6366f1;--accent3:#8b5cf6;
+  --green:#10b981;--orange:#f59e0b;--red:#ef4444;--cyan:#06b6d4;--pink:#ec4899;
+  --radius:12px;--radius2:16px;
+  --card-shadow:0 8px 30px rgba(0,0,0,.3);
+  --nav-bg:rgba(10,14,26,.85);
+  --border-color:rgba(255,255,255,.06);
+  --border-color2:rgba(255,255,255,.08);
+  --hero-gradient:linear-gradient(135deg,#fff 0%,var(--accent) 50%,var(--accent3) 100%);
+}
+[data-theme="light"]{
+  --bg:#f8fafc;--bg2:#ffffff;--bg3:#f1f5f9;--bg4:#e2e8f0;
+  --text:#1e293b;--text2:#475569;--text3:#94a3b8;
+  --accent:#2563eb;--accent2:#4f46e5;--accent3:#7c3aed;
+  --green:#059669;--orange:#d97706;--red:#dc2626;--cyan:#0891b2;--pink:#db2777;
+  --card-shadow:0 4px 20px rgba(0,0,0,.08);
+  --nav-bg:rgba(255,255,255,.9);
+  --border-color:rgba(0,0,0,.08);
+  --border-color2:rgba(0,0,0,.1);
+  --hero-gradient:linear-gradient(135deg,var(--text) 0%,var(--accent) 50%,var(--accent3) 100%);
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
+::selection{background:var(--accent);color:#fff}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
+
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-color);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{font-weight:700;font-size:1.1rem;background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{color:var(--text2);text-decoration:none;font-size:.85rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--accent)}
+.theme-toggle{background:var(--bg4);border:1px solid var(--border-color2);color:var(--text);width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:all .2s;flex-shrink:0}
+.theme-toggle:hover{background:var(--accent);border-color:var(--accent);transform:scale(1.1)}
+
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6rem 2rem 4rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 30% 50%,rgba(59,130,246,.08) 0%,transparent 50%),radial-gradient(ellipse at 70% 50%,rgba(139,92,246,.06) 0%,transparent 50%);animation:heroGlow 12s ease-in-out infinite alternate}
+@keyframes heroGlow{0%{transform:translate(0,0) rotate(0deg)}100%{transform:translate(-2%,2%) rotate(3deg)}}
+.hero h1{font-size:clamp(2.5rem,5vw,4rem);font-weight:800;line-height:1.15;margin-bottom:1rem;background:var(--hero-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;position:relative}
+.hero p{font-size:1.15rem;color:var(--text2);max-width:640px;margin:0 auto 2.5rem;position:relative}
+.hero-canvas{position:relative;width:100%;max-width:900px;margin:0 auto}
+
+.section{padding:5rem 2rem;max-width:1200px;margin:0 auto}
+.section-title{text-align:center;margin-bottom:3.5rem}
+.section-title h2{font-size:clamp(1.8rem,3vw,2.5rem);font-weight:700;margin-bottom:.75rem;position:relative;display:inline-block}
+.section-title h2::after{content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);width:60px;height:3px;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--accent3))}
+.section-title p{color:var(--text2);font-size:1rem;max-width:600px;margin:0 auto}
+
+.card{background:var(--bg2);border:1px solid var(--border-color);border-radius:var(--radius2);padding:2rem;transition:transform .3s,box-shadow .3s}
+.card:hover{transform:translateY(-2px);box-shadow:var(--card-shadow)}
+
+.formula-box{background:var(--bg3);border:1px solid var(--border-color2);border-radius:var(--radius);padding:1.5rem 2rem;margin:1.5rem 0;text-align:center;font-family:'JetBrains Mono',monospace}
+.formula-box .formula{font-size:1.3rem;color:var(--cyan);letter-spacing:.5px;margin:.5rem 0}
+.formula-box .formula-desc{font-size:.85rem;color:var(--text3);margin-top:.5rem}
+
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:2rem}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:1.5rem}
+
+.badge{display:inline-block;padding:.2rem .7rem;border-radius:20px;font-size:.75rem;font-weight:600;margin-bottom:.75rem}
+.badge-blue{background:rgba(59,130,246,.15);color:var(--accent)}
+.badge-green{background:rgba(16,185,129,.15);color:var(--green)}
+.badge-purple{background:rgba(139,92,246,.15);color:var(--accent3)}
+.badge-orange{background:rgba(245,158,11,.15);color:var(--orange)}
+.badge-cyan{background:rgba(6,182,212,.15);color:var(--cyan)}
+.badge-pink{background:rgba(236,72,153,.15);color:var(--pink)}
+
+canvas{display:block;border-radius:var(--radius)}
+
+.interactive-demo{position:relative;background:var(--bg3);border:1px solid var(--border-color2);border-radius:var(--radius);overflow-x:auto}
+.demo-controls{display:flex;flex-wrap:wrap;gap:.75rem;padding:1rem 1.5rem;border-bottom:1px solid var(--border-color);align-items:center}
+.demo-controls label{font-size:.82rem;color:var(--text2);font-weight:500}
+.demo-controls select,.demo-controls input[type=range]{background:var(--bg4);border:1px solid var(--border-color2);color:var(--text);padding:.35rem .6rem;border-radius:6px;font-size:.82rem;font-family:inherit}
+.demo-controls input[type=range]{width:100px;accent-color:var(--accent)}
+.demo-controls button{background:var(--accent);color:#fff;border:none;padding:.4rem 1rem;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;transition:background .2s;font-family:inherit}
+.demo-controls button:hover{background:var(--accent2)}
+.demo-area{padding:1.5rem;display:flex;flex-wrap:wrap;gap:2rem;align-items:flex-start;justify-content:center;min-width:max-content}
+.demo-matrix{text-align:center}
+.demo-matrix h4{font-size:.8rem;color:var(--text3);margin-bottom:.5rem;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.matrix-grid{display:inline-grid;gap:2px;background:var(--bg4);padding:4px;border-radius:6px}
+.matrix-cell{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:500;border-radius:4px;transition:all .3s}
+.matrix-cell.highlight{animation:cellPulse .6s ease}
+.matrix-cell.editable{cursor:pointer;position:relative}
+.matrix-cell.editable:hover{box-shadow:inset 0 0 0 2px var(--accent)}
+.matrix-cell.editable input{width:100%;height:100%;background:transparent;border:none;text-align:center;font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:500;color:inherit;outline:none}
+.matrix-cell.padding-cell{background:var(--bg3)!important;color:var(--text3)!important;border:1px dashed var(--border-color2)}
+.matrix-cell.empty{background:var(--bg4);color:var(--text3)}
+@keyframes cellPulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+
+.result-arrow{display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--accent);padding:0 .5rem}
+
+.param-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.85rem}
+.param-table th,.param-table td{padding:.6rem 1rem;text-align:left;border-bottom:1px solid var(--border-color)}
+.param-table th{color:var(--text3);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.5px}
+.param-table td{color:var(--text2)}
+.param-table tr:hover td{color:var(--text)}
+
+.arch-flow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:.5rem;padding:2rem 0}
+.arch-node{background:var(--bg3);border:1px solid var(--border-color2);border-radius:var(--radius);padding:1rem 1.5rem;text-align:center;min-width:110px;transition:all .3s;cursor:default;position:relative}
+.arch-node:hover{border-color:var(--accent);box-shadow:0 0 20px rgba(59,130,246,.15)}
+.arch-node .node-icon{font-size:1.5rem;margin-bottom:.3rem}
+.arch-node .node-name{font-size:.78rem;font-weight:600;color:var(--text)}
+.arch-node .node-detail{font-size:.7rem;color:var(--text3);margin-top:.2rem}
+.arch-arrow{color:var(--accent);font-size:1.2rem;flex-shrink:0}
+
+.step-list{display:flex;flex-direction:column;gap:1rem}
+.step-item{display:flex;gap:1rem;align-items:flex-start;padding:1rem;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border-color)}
+.step-num{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0}
+.step-content h4{font-size:.92rem;font-weight:600;margin-bottom:.25rem}
+.step-content p{font-size:.85rem;color:var(--text2)}
+
+.code-block{background:var(--bg);border:1px solid var(--border-color);border-radius:var(--radius);padding:1.2rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--text2);overflow-x:auto;line-height:1.8}
+.code-block .kw{color:var(--accent3)}
+.code-block .fn{color:var(--cyan)}
+.code-block .str{color:var(--green)}
+.code-block .num{color:var(--orange)}
+.code-block .cm{color:var(--text3)}
+
+.tab-group{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:1px solid var(--border-color2)}
+.tab-btn{padding:.6rem 1.2rem;background:none;border:none;color:var(--text3);font-size:.85rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;font-family:inherit}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+.note{background:rgba(59,130,246,.08);border-left:3px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0;padding:1rem 1.5rem;margin:1rem 0;font-size:.88rem;color:var(--text2)}
+.note strong{color:var(--accent)}
+
+.tip{background:rgba(16,185,129,.08);border-left:3px solid var(--green);border-radius:0 var(--radius) var(--radius) 0;padding:1rem 1.5rem;margin:1rem 0;font-size:.88rem;color:var(--text2)}
+.tip strong{color:var(--green)}
+
+.footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border-color);color:var(--text3);font-size:.82rem;margin-top:2rem}
+
+@media(max-width:768px){
+  .nav-links{display:none}
+  .arch-flow{flex-direction:column}
+  .arch-arrow{transform:rotate(90deg)}
+  .demo-area{flex-direction:column;align-items:center}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">CNN Explorer</div>
+  <ul class="nav-links">
+    <li><a href="#overview">总体框架</a></li>
+    <li><a href="#conv">卷积层</a></li>
+    <li><a href="#pool">池化层</a></li>
+    <li><a href="#activation">激活函数</a></li>
+    <li><a href="#fc">全连接层</a></li>
+    <li><a href="#code">代码示例</a></li>
+  </ul>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换主题">
+    <span class="theme-icon">🌙</span>
+  </button>
+</nav>
+
+<section class="hero" id="top">
+  <h1>卷积神经网络<br>CNN 原理深度解析</h1>
+  <p>从输入图像到特征提取，理解卷积神经网络每一层的计算细节与数学原理</p>
+  <div class="hero-canvas">
+    <canvas id="heroCanvas" width="900" height="300"></canvas>
+  </div>
+</section>
+
+<section class="section" id="overview">
+  <div class="section-title">
+    <h2>网络总体框架</h2>
+    <p>一个典型的 CNN 由卷积层、池化层、激活函数和全连接层交替堆叠而成</p>
+  </div>
+
+  <div class="card" style="margin-bottom:2rem">
+    <div class="arch-flow" id="archFlow">
+      <div class="arch-node" style="border-color:var(--green)">
+        <div class="node-icon">🖼️</div>
+        <div class="node-name">输入层</div>
+        <div class="node-detail">224×224×3</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node" style="border-color:var(--accent)">
+        <div class="node-icon">🔲</div>
+        <div class="node-name">卷积层</div>
+        <div class="node-detail">Conv2D</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node" style="border-color:var(--orange)">
+        <div class="node-icon">⚡</div>
+        <div class="node-name">激活函数</div>
+        <div class="node-detail">ReLU</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node" style="border-color:var(--pink)">
+        <div class="node-icon">📊</div>
+        <div class="node-name">池化层</div>
+        <div class="node-detail">MaxPool</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node" style="border-color:var(--text3);opacity:.5">
+        <div class="node-icon">⋯</div>
+        <div class="node-name">重复</div>
+        <div class="node-detail">多层堆叠</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node" style="border-color:var(--accent3)">
+        <div class="node-icon">🔗</div>
+        <div class="node-name">全连接层</div>
+        <div class="node-detail">FC</div>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node" style="border-color:var(--green)">
+        <div class="node-icon">📤</div>
+        <div class="node-name">输出层</div>
+        <div class="node-detail">Softmax</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <span class="badge badge-blue">核心思想</span>
+      <h3 style="font-size:1rem;margin-bottom:.5rem">局部感受野</h3>
+      <p style="font-size:.88rem;color:var(--text2)">每个神经元只关注输入的一个局部区域，而非全部像素。这大幅减少了参数数量，并保留了空间结构信息。</p>
+    </div>
+    <div class="card">
+      <span class="badge badge-green">参数共享</span>
+      <h3 style="font-size:1rem;margin-bottom:.5rem">权值共享机制</h3>
+      <p style="font-size:.88rem;color:var(--text2)">同一个卷积核在整个输入上滑动，所有位置共享相同的权重参数，使网络具有平移不变性。</p>
+    </div>
+    <div class="card">
+      <span class="badge badge-purple">层级特征</span>
+      <h3 style="font-size:1rem;margin-bottom:.5rem">层次化特征提取</h3>
+      <p style="font-size:.88rem;color:var(--text2)">浅层学习边缘、纹理等低级特征，深层学习形状、物体等高级语义特征，逐层抽象。</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="conv">
+  <div class="section-title">
+    <h2>卷积层 Convolution Layer</h2>
+    <p>卷积层是 CNN 的核心组件，通过卷积核在输入上滑动来提取局部特征</p>
+  </div>
+
+  <div class="card" style="margin-top:2rem">
+    <h3 style="font-size:1.05rem;margin-bottom:1rem">📐 CNN 各层输出尺寸计算公式</h3>
+    <div class="formula-box">
+      <div class="formula">O = ⌊(I − K + 2P) / S⌋ + 1</div>
+      <div class="formula-desc">其中 O = 输出尺寸，I = 输入尺寸，K = 卷积核大小，P = 填充大小，S = 步幅</div>
+    </div>
+    <table class="param-table">
+      <thead><tr><th>符号</th><th>含义</th><th>典型值</th></tr></thead>
+      <tbody>
+        <tr><td>I</td><td>输入特征图的空间尺寸 (高或宽)</td><td>32, 64, 224 ...</td></tr>
+        <tr><td>K</td><td>卷积核 / 池化窗口大小</td><td>3, 5, 7</td></tr>
+        <tr><td>P</td><td>零填充 (padding) 大小</td><td>0, 1, 2</td></tr>
+        <tr><td>S</td><td>滑动步幅 (stride)</td><td>1, 2</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- <div class="grid-2" style="margin-bottom:2rem">
+    <div class="card">
+      <span class="badge badge-blue">2D 卷积公式</span>
+      <h3 style="font-size:1.05rem;margin-bottom:.75rem">离散卷积运算</h3>
+      <div class="formula-box">
+        <div class="formula">(f * g)(i, j) = Σ<sub>m</sub> Σ<sub>n</sub> f(m, n) · g(i−m, j−n)</div>
+        <div class="formula-desc">f 为输入特征图，g 为卷积核（滤波器）</div>
+      </div>
+      <div class="formula-box">
+        <div class="formula">y(i, j) = Σ<sub>m=0</sub><sup>K-1</sup> Σ<sub>n=0</sub><sup>K-1</sup> x(i+m, j+n) · w(m, n) + b</div>
+        <div class="formula-desc">实际实现中的互相关运算，w 为卷积核权重，b 为偏置</div>
+      </div>
+    </div>
+    <div class="card">
+      <span class="badge badge-green">多通道卷积</span>
+      <h3 style="font-size:1.05rem;margin-bottom:.75rem">多输入通道 / 多卷积核</h3>
+      <div class="formula-box">
+        <div class="formula">y<sub>k</sub>(i, j) = Σ<sub>c=0</sub><sup>C<sub>in</sub>−1</sup> Σ<sub>m</sub> Σ<sub>n</sub> x<sub>c</sub>(i+m, j+n) · w<sub>k,c</sub>(m, n) + b<sub>k</sub></div>
+        <div class="formula-desc">C<sub>in</sub> 为输入通道数，k 为第 k 个卷积核，输出通道数 = 卷积核数量</div>
+      </div>
+      <div class="note" style="margin-top:1rem">
+        <strong>参数量计算：</strong>每个卷积核有 K × K × C<sub>in</sub> + 1 个参数（+1 为偏置）。若有 N 个卷积核，总参数 = N × (K × K × C<sub>in</sub> + 1)
+      </div>
+    </div>
+  </div> -->
+
+  <div class="card" style="margin-bottom:2rem">
+    <h3 style="font-size:1.05rem;margin-bottom:1rem">🎮 卷积运算交互演示</h3>
+    <p style="font-size:.85rem;color:var(--text3);margin-bottom:1rem">点击单元格可自定义输入矩阵的数值，点击「执行卷积」观察卷积核滑动计算过程。设置填充后，padding 的 0 值会以虚线边框显示。</p>
+    <div class="interactive-demo">
+      <div class="demo-controls">
+        <label>输入大小:
+          <select id="convInputSize" onchange="resetConvDemo()">
+            <option value="3">3×3</option>
+            <option value="4">4×4</option>
+            <option value="5" selected>5×5</option>
+            <option value="6">6×6</option>
+            <option value="7">7×7</option>
+          </select>
+        </label>
+        <label>核大小:
+          <select id="convKernelSize" onchange="resetConvDemo()">
+            <option value="1">1×1</option>
+            <option value="3" selected>3×3</option>
+            <option value="5">5×5</option>
+          </select>
+        </label>
+        <label>步幅:
+          <select id="convStride">
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+          </select>
+        </label>
+        <label>填充:
+          <select id="convPadding" onchange="updateConvPaddingDisplay()">
+            <option value="0" selected>0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+          </select>
+        </label>
+        <button id="convRunBtn" onclick="runConvDemo()">执行卷积</button>
+        <button onclick="resetConvDemo()" style="background:var(--bg4)">重置</button>
+        <span id="convStepInfo" style="font-size:.82rem;color:var(--cyan);margin-left:auto"></span>
+      </div>
+      <div class="demo-area" id="convDemoArea">
+        <div class="demo-matrix">
+          <h4 id="convInputLabel">输入矩阵 (5×5)</h4>
+          <div class="matrix-grid" id="convInput" style="grid-template-columns:repeat(5,44px)"></div>
+        </div>
+        <div class="demo-matrix">
+          <h4 id="convKernelLabel">卷积核 (3×3)</h4>
+          <div class="matrix-grid" id="convKernel" style="grid-template-columns:repeat(3,44px)"></div>
+        </div>
+        <div class="result-arrow">→</div>
+        <div class="demo-matrix">
+          <h4>输出特征图</h4>
+          <div class="matrix-grid" id="convOutput"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="badge badge-orange">关键超参数</span>
+    <h3 style="font-size:1.05rem;margin-bottom:1rem">卷积层超参数详解</h3>
+    <table class="param-table">
+      <thead><tr><th>超参数</th><th>说明</th><th>影响</th></tr></thead>
+      <tbody>
+        <tr><td><strong>卷积核大小 (Kernel Size)</strong></td><td>常见 3×3、5×5、7×7、1×1</td><td>越大感受野越大，参数越多；3×3 最常用</td></tr>
+        <tr><td><strong>步幅 (Stride)</strong></td><td>卷积核每次滑动的距离</td><td>Stride > 1 可下采样，减小特征图尺寸</td></tr>
+        <tr><td><strong>填充 (Padding)</strong></td><td>输入边缘填充零的层数</td><td>Same 填充保持输出尺寸不变</td></tr>
+        <tr><td><strong>卷积核数量 (Filters)</strong></td><td>决定输出通道数（特征图数量）</td><td>越多提取特征越丰富，但计算量增大</td></tr>
+        <tr><td><strong>膨胀率 (Dilation)</strong></td><td>卷积核元素之间的间距</td><td>增大感受野而不增加参数</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section" id="pool">
+  <div class="section-title">
+    <h2>池化层 Pooling Layer</h2>
+    <p>池化层用于降低特征图的空间维度，减少计算量并增强特征的平移不变性</p>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:2rem">
+    <div class="card">
+      <span class="badge badge-pink">最大池化</span>
+      <h3 style="font-size:1.05rem;margin-bottom:.75rem">Max Pooling</h3>
+      <div class="formula-box">
+        <div class="formula">y(i, j) = max<sub>(m,n)∈R<sub>ij</sub></sub> x(m, n)</div>
+        <div class="formula-desc">取池化窗口 R 内的最大值作为输出，保留最显著的特征</div>
+      </div>
+      <p style="font-size:.88rem;color:var(--text2);margin-top:.75rem">
+        Max Pooling 是最常用的池化方式。它选取局部区域中的最大值，能有效保留纹理和边缘等强特征响应。
+      </p>
+    </div>
+    <div class="card">
+      <span class="badge badge-cyan">平均池化</span>
+      <h3 style="font-size:1.05rem;margin-bottom:.75rem">Average Pooling</h3>
+      <div class="formula-box">
+        <div class="formula">y(i, j) = (1 / |R<sub>ij</sub>|) · Σ<sub>(m,n)∈R<sub>ij</sub></sub> x(m, n)</div>
+        <div class="formula-desc">取池化窗口 R 内所有值的平均值，保留区域整体信息</div>
+      </div>
+      <p style="font-size:.88rem;color:var(--text2);margin-top:.75rem">
+        Average Pooling 计算局部区域的平均值，保留更多背景信息。常用于网络最后一层做全局平均池化 (GAP)。
+      </p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:2rem">
+    <h3 style="font-size:1.05rem;margin-bottom:1rem">🎮 池化运算交互演示</h3>
+    <p style="font-size:.85rem;color:var(--text3);margin-bottom:1rem">点击单元格可自定义输入矩阵的数值，选择池化类型观察计算过程</p>
+    <div class="interactive-demo">
+      <div class="demo-controls">
+        <label>输入大小:
+          <select id="poolInputSize" onchange="resetPoolDemo()">
+            <option value="3">3×3</option>
+            <option value="4" selected>4×4</option>
+            <option value="5">5×5</option>
+            <option value="6">6×6</option>
+            <option value="8">8×8</option>
+          </select>
+        </label>
+        <label>池化类型:
+          <select id="poolType" onchange="resetPoolDemo()">
+            <option value="max" selected>Max Pooling</option>
+            <option value="avg">Average Pooling</option>
+          </select>
+        </label>
+        <label>窗口大小:
+          <select id="poolSize" onchange="resetPoolDemo()">
+            <option value="2" selected>2×2</option>
+            <option value="3">3×3</option>
+          </select>
+        </label>
+        <label>步幅:
+          <select id="poolStride" onchange="resetPoolDemo()">
+            <option value="2" selected>2</option>
+            <option value="1">1</option>
+          </select>
+        </label>
+        <button onclick="runPoolDemo()">执行池化</button>
+        <button onclick="resetPoolDemo()" style="background:var(--bg4)">重置</button>
+        <span id="poolStepInfo" style="font-size:.82rem;color:var(--pink);margin-left:auto"></span>
+      </div>
+      <div class="demo-area" id="poolDemoArea">
+        <div class="demo-matrix">
+          <h4 id="poolInputLabel">输入矩阵 (4×4)</h4>
+          <div class="matrix-grid" id="poolInput" style="grid-template-columns:repeat(4,44px)"></div>
+        </div>
+        <div class="result-arrow">→</div>
+        <div class="demo-matrix">
+          <h4>输出特征图</h4>
+          <div class="matrix-grid" id="poolOutput"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <span class="badge badge-orange">池化层特性</span>
+    <h3 style="font-size:1.05rem;margin-bottom:1rem">池化层的关键特点</h3>
+    <div class="grid-3" style="gap:1rem">
+      <div class="step-item" style="flex-direction:column;text-align:center;padding:1.2rem">
+        <div style="font-size:1.8rem;margin-bottom:.5rem">📉</div>
+        <h4 style="font-size:.9rem">降维减参</h4>
+        <p style="font-size:.82rem;color:var(--text2)">将特征图尺寸缩小，减少后续层的计算量和参数量</p>
+      </div>
+      <div class="step-item" style="flex-direction:column;text-align:center;padding:1.2rem">
+        <div style="font-size:1.8rem;margin-bottom:.5rem">🔄</div>
+        <h4 style="font-size:.9rem">平移不变</h4>
+        <p style="font-size:.82rem;color:var(--text2)">微小位移不影响池化结果，增强特征的空间鲁棒性</p>
+      </div>
+      <div class="step-item" style="flex-direction:column;text-align:center;padding:1.2rem">
+        <div style="font-size:1.8rem;margin-bottom:.5rem">🚫</div>
+        <h4 style="font-size:.9rem">无学习参数</h4>
+        <p style="font-size:.82rem;color:var(--text2)">池化操作不包含可训练参数，仅做固定的聚合运算</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="activation">
+  <div class="section-title">
+    <h2>激活函数 Activation</h2>
+    <p>激活函数为网络引入非线性，使 CNN 能够学习复杂的特征映射</p>
+  </div>
+
+  <div class="card" style="margin-bottom:2rem">
+    <div class="tab-group">
+      <button class="tab-btn active" onclick="switchTab(this,'relu')">ReLU</button>
+      <button class="tab-btn" onclick="switchTab(this,'sigmoid')">Sigmoid</button>
+      <button class="tab-btn" onclick="switchTab(this,'tanh')">Tanh</button>
+      <button class="tab-btn" onclick="switchTab(this,'leaky')">Leaky ReLU</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-relu">
+      <div class="grid-2">
+        <div>
+          <div class="formula-box">
+            <div class="formula">f(x) = max(0, x)</div>
+            <div class="formula-desc">输出 = max(0, 输入)，负值归零，正值不变</div>
+          </div>
+          <div class="note">
+            <strong>优点：</strong>计算简单高效，有效缓解梯度消失问题，是 CNN 中最常用的激活函数。
+          </div>
+          <div class="tip" style="margin-top:.5rem">
+            <strong>缺点：</strong>负值区域梯度为零（神经元死亡），输出非零中心化。
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;align-items:center">
+          <canvas id="actCanvas_relu" width="360" height="260"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-sigmoid">
+      <div class="grid-2">
+        <div>
+          <div class="formula-box">
+            <div class="formula">f(x) = 1 / (1 + e<sup>−x</sup>)</div>
+            <div class="formula-desc">将任意实数映射到 (0, 1) 区间</div>
+          </div>
+          <div class="note">
+            <strong>优点：</strong>输出在 (0,1)，适合概率输出和二分类。
+          </div>
+          <div class="tip" style="margin-top:.5rem">
+            <strong>缺点：</strong>易梯度消失，非零中心化，含有指数运算（计算较慢）。
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;align-items:center">
+          <canvas id="actCanvas_sigmoid" width="360" height="260"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-tanh">
+      <div class="grid-2">
+        <div>
+          <div class="formula-box">
+            <div class="formula">f(x) = (e<sup>x</sup> − e<sup>−x</sup>) / (e<sup>x</sup> + e<sup>−x</sup>)</div>
+            <div class="formula-desc">将任意实数映射到 (−1, 1) 区间，零中心化</div>
+          </div>
+          <div class="note">
+            <strong>优点：</strong>零中心化输出，梯度比 Sigmoid 更强。
+          </div>
+          <div class="tip" style="margin-top:.5rem">
+            <strong>缺点：</strong>仍有梯度消失问题，含有指数运算。
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;align-items:center">
+          <canvas id="actCanvas_tanh" width="360" height="260"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-leaky">
+      <div class="grid-2">
+        <div>
+          <div class="formula-box">
+            <div class="formula">f(x) = x &nbsp;if x > 0, &nbsp;αx &nbsp;if x ≤ 0</div>
+            <div class="formula-desc">α 通常取 0.01，负值区域有微小梯度</div>
+          </div>
+          <div class="note">
+            <strong>优点：</strong>解决了 ReLU 神经元死亡问题，负值区域仍有梯度。
+          </div>
+          <div class="tip" style="margin-top:.5rem">
+            <strong>缺点：</strong>α 需要手动设定，效果不一定优于 ReLU。
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;align-items:center">
+          <canvas id="actCanvas_leaky" width="360" height="260"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="fc">
+  <div class="section-title">
+    <h2>全连接层 & 输出层</h2>
+    <p>全连接层将卷积层提取的特征映射到最终的分类或回归结果</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <span class="badge badge-purple">全连接层</span>
+      <h3 style="font-size:1.05rem;margin-bottom:.75rem">Fully Connected Layer</h3>
+      <div class="formula-box">
+        <div class="formula">y = σ(Wx + b)</div>
+        <div class="formula-desc">W 为权重矩阵，x 为展平后的特征向量，b 为偏置，σ 为激活函数</div>
+      </div>
+      <div class="step-list" style="margin-top:1rem">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h4>特征展平 (Flatten)</h4>
+            <p>将卷积/池化输出的多维特征图 (H×W×C) 展平为一维向量 (H×W×C,)</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h4>线性变换</h4>
+            <p>通过权重矩阵 W 和偏置 b 对特征向量做仿射变换 y = Wx + b</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h4>非线性激活</h4>
+            <p>应用 ReLU 等激活函数引入非线性，增强网络表达能力</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="badge badge-green">输出层</span>
+      <h3 style="font-size:1.05rem;margin-bottom:.75rem">Softmax 输出</h3>
+      <div class="formula-box">
+        <div class="formula">P(y=k|x) = e<sup>z<sub>k</sub></sup> / Σ<sub>j=1</sub><sup>C</sup> e<sup>z<sub>j</sub></sup></div>
+        <div class="formula-desc">z 为最后一层输出的 logits，C 为类别数，输出为各类别的概率分布</div>
+      </div>
+      <div class="note" style="margin-top:1rem">
+        <strong>交叉熵损失：</strong>L = −Σ<sub>k=1</sub><sup>C</sup> y<sub>k</sub> · log(P<sub>k</sub>)，其中 y 为 one-hot 编码的真实标签
+      </div>
+      <div class="tip" style="margin-top:.75rem">
+        <strong>全局平均池化 (GAP)：</strong>现代网络常在最后一层卷积后使用 GAP 替代 Flatten+FC，大幅减少参数量。GAP 将每个通道取平均值，输出维度 = 通道数。
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="code">
+  <div class="section-title">
+    <h2>代码示例</h2>
+    <p>使用 PyTorch 构建一个简单的 CNN 分类网络</p>
+  </div>
+
+  <div class="card">
+    <div class="code-block">
+      <span class="kw">import</span> torch<br>
+      <span class="kw">import</span> torch.nn <span class="kw">as</span> nn<br>
+      <br>
+      <span class="kw">class</span> <span class="fn">SimpleCNN</span>(nn.Module):<br>
+      &nbsp;&nbsp;<span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, num_classes=<span class="num">10</span>):<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">super</span>(SimpleCNN, <span class="kw">self</span>).__init__()<br>
+      <br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 卷积块 1: Conv → ReLU → MaxPool</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">self</span>.conv_block1 = nn.Sequential(<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nn.Conv2d(<span class="num">3</span>, <span class="num">32</span>, kernel_size=<span class="num">3</span>, padding=<span class="num">1</span>),<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nn.ReLU(inplace=<span class="kw">True</span>),<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nn.MaxPool2d(kernel_size=<span class="num">2</span>, stride=<span class="num">2</span>)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;)<br>
+      <br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 卷积块 2: Conv → ReLU → MaxPool</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">self</span>.conv_block2 = nn.Sequential(<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nn.Conv2d(<span class="num">32</span>, <span class="num">64</span>, kernel_size=<span class="num">3</span>, padding=<span class="num">1</span>),<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nn.ReLU(inplace=<span class="kw">True</span>),<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nn.MaxPool2d(kernel_size=<span class="num">2</span>, stride=<span class="num">2</span>)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;)<br>
+      <br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 全连接分类头</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">self</span>.classifier = nn.Sequential(<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nn.Flatten(),<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nn.Linear(<span class="num">64</span> * <span class="num">8</span> * <span class="num">8</span>, <span class="num">128</span>),<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nn.ReLU(inplace=<span class="kw">True</span>),<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nn.Linear(<span class="num">128</span>, num_classes)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;)<br>
+      <br>
+      &nbsp;&nbsp;<span class="kw">def</span> <span class="fn">forward</span>(<span class="kw">self</span>, x):<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;x = <span class="kw">self</span>.conv_block1(x)&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># [B,3,32,32] → [B,32,16,16]</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;x = <span class="kw">self</span>.conv_block2(x)&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># [B,32,16,16] → [B,64,8,8]</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;x = <span class="kw">self</span>.classifier(x)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># [B,64,8,8] → [B,num_classes]</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> x<br>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <p>CNN 卷积神经网络原理展示 · 交互式学习工具</p>
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+
+let convInputData, convKernelData, convAnimTimer;
+let poolInputData, poolAnimTimer;
+let heroAnimFrameId = null;
+
+function getTheme() {
+  return localStorage.getItem('theme') || 'dark';
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+  const icon = document.querySelector('.theme-icon');
+  if (icon) {
+    icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+  }
+}
+
+function toggleTheme() {
+  const current = getTheme();
+  const next = current === 'dark' ? 'light' : 'dark';
+  setTheme(next);
+  if (typeof initHeroCanvas === 'function') initHeroCanvas();
+  if (typeof initActivations === 'function') initActivations();
+}
+
+function switchTab(btn, name) {
+  btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  btn.closest('.card').querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  $('tab-' + name).classList.add('active');
+}
+
+const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+function makeMatrix(container, rows, cols, values, cellSize = 44) {
+  container.innerHTML = '';
+  container.style.gridTemplateColumns = `repeat(${cols},${cellSize}px)`;
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const d = document.createElement('div');
+      d.className = 'matrix-cell';
+      d.style.width = cellSize + 'px';
+      d.style.height = cellSize + 'px';
+      const v = values ? values[i][j] : rnd(-9, 9);
+      d.textContent = v;
+      const t = clamp((v + 10) / 20, 0, 1);
+      const hue = 220 - t * 170;
+      d.style.background = `hsla(${hue}, 60%, 40%, 0.25)`;
+      d.style.color = `hsl(${hue}, 70%, 70%)`;
+      container.appendChild(d);
+    }
+  }
+}
+
+function randomMatrix(r, c) {
+  return Array.from({ length: r }, () => Array.from({ length: c }, () => rnd(-9, 9)));
+}
+
+function getCellSize(matrixSize) {
+  if (matrixSize <= 5) return 44;
+  if (matrixSize <= 7) return 38;
+  if (matrixSize <= 9) return 32;
+  if (matrixSize <= 11) return 28;
+  return 24;
+}
+
+function makeEditableInputMatrix(container, rows, cols, values, cellSize = 44) {
+  container.innerHTML = '';
+  container.style.gridTemplateColumns = `repeat(${cols},${cellSize}px)`;
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const d = document.createElement('div');
+      d.className = 'matrix-cell editable';
+      d.style.width = cellSize + 'px';
+      d.style.height = cellSize + 'px';
+      const v = values ? values[i][j] : rnd(-9, 9);
+      if (values) values[i][j] = v;
+      const inp = document.createElement('input');
+      inp.type = 'number';
+      inp.value = v;
+      inp.dataset.row = i;
+      inp.dataset.col = j;
+      inp.addEventListener('change', function() {
+        const r = parseInt(this.dataset.row);
+        const c = parseInt(this.dataset.col);
+        convInputData[r][c] = parseInt(this.value) || 0;
+        updateConvPaddingDisplay();
+      });
+      inp.addEventListener('focus', function() { this.select(); });
+      const t = clamp((v + 10) / 20, 0, 1);
+      const hue = 220 - t * 170;
+      d.style.background = `hsla(${hue}, 60%, 40%, 0.25)`;
+      d.style.color = `hsl(${hue}, 70%, 70%)`;
+      d.appendChild(inp);
+      container.appendChild(d);
+    }
+  }
+}
+
+function updateConvPaddingDisplay() {
+  const pad = parseInt($('convPadding').value);
+  const inputSize = parseInt($('convInputSize').value);
+  const paddedSize = inputSize + 2 * pad;
+  const cellSize = getCellSize(paddedSize);
+  $('convInputLabel').textContent = `输入矩阵 (${paddedSize}×${paddedSize}${pad > 0 ? ', 灰色为 padding' : ''})`;
+
+  const container = $('convInput');
+  container.innerHTML = '';
+  container.style.gridTemplateColumns = `repeat(${paddedSize},${cellSize}px)`;
+
+  for (let i = 0; i < paddedSize; i++) {
+    for (let j = 0; j < paddedSize; j++) {
+      const d = document.createElement('div');
+      d.className = 'matrix-cell';
+      d.style.width = cellSize + 'px';
+      d.style.height = cellSize + 'px';
+      if (cellSize < 36) d.style.fontSize = '.75rem';
+
+      const isPad = i < pad || i >= pad + inputSize || j < pad || j >= pad + inputSize;
+
+      if (isPad) {
+        d.classList.add('padding-cell');
+        d.textContent = '0';
+        d.dataset.padRow = i;
+        d.dataset.padCol = j;
+      } else {
+        d.classList.add('editable');
+        const ri = i - pad;
+        const rj = j - pad;
+        const v = convInputData[ri][rj];
+        const inp = document.createElement('input');
+        inp.type = 'number';
+        inp.value = v;
+        inp.dataset.row = ri;
+        inp.dataset.col = rj;
+        inp.addEventListener('change', function() {
+          const r = parseInt(this.dataset.row);
+          const c = parseInt(this.dataset.col);
+          convInputData[r][c] = parseInt(this.value) || 0;
+          updateConvPaddingDisplay();
+        });
+        inp.addEventListener('focus', function() { this.select(); });
+        const t = clamp((v + 10) / 20, 0, 1);
+        const hue = 220 - t * 170;
+        d.style.background = `hsla(${hue}, 60%, 40%, 0.25)`;
+        d.style.color = `hsl(${hue}, 70%, 70%)`;
+        d.appendChild(inp);
+      }
+      container.appendChild(d);
+    }
+  }
+}
+
+function makeEditableKernelMatrix(container, rows, cols, values, cellSize = 44) {
+  container.innerHTML = '';
+  container.style.gridTemplateColumns = `repeat(${cols},${cellSize}px)`;
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const d = document.createElement('div');
+      d.className = 'matrix-cell editable';
+      d.style.width = cellSize + 'px';
+      d.style.height = cellSize + 'px';
+      if (cellSize < 36) d.style.fontSize = '.75rem';
+      const v = values ? values[i][j] : rnd(-9, 9);
+      if (values) values[i][j] = v;
+      const inp = document.createElement('input');
+      inp.type = 'number';
+      inp.value = v;
+      inp.dataset.row = i;
+      inp.dataset.col = j;
+      inp.addEventListener('change', function() {
+        const r = parseInt(this.dataset.row);
+        const c = parseInt(this.dataset.col);
+        convKernelData[r][c] = parseInt(this.value) || 0;
+      });
+      inp.addEventListener('focus', function() { this.select(); });
+      const t = clamp((v + 10) / 20, 0, 1);
+      const hue = 220 - t * 170;
+      d.style.background = `hsla(${hue}, 60%, 40%, 0.25)`;
+      d.style.color = `hsl(${hue}, 70%, 70%)`;
+      d.appendChild(inp);
+      container.appendChild(d);
+    }
+  }
+}
+
+function initConvDemo() {
+  const inputSize = parseInt($('convInputSize').value);
+  const ks = parseInt($('convKernelSize').value);
+  const pad = parseInt($('convPadding').value);
+  const stride = parseInt($('convStride').value);
+  const paddedSize = inputSize + 2 * pad;
+  const cellSize = getCellSize(paddedSize);
+  const kernelCellSize = getCellSize(ks);
+
+  convInputData = randomMatrix(inputSize, inputSize);
+  convKernelData = randomMatrix(ks, ks);
+  updateConvPaddingDisplay();
+  $('convKernelLabel').textContent = `卷积核 (${ks}×${ks})`;
+  makeEditableKernelMatrix($('convKernel'), ks, ks, convKernelData, kernelCellSize);
+
+  const os = Math.floor((paddedSize - ks) / stride) + 1;
+  const outCellSize = getCellSize(os);
+  $('convOutput').style.gridTemplateColumns = `repeat(${os},${outCellSize}px)`;
+  $('convOutput').innerHTML = '';
+  for (let i = 0; i < os * os; i++) {
+    const d = document.createElement('div');
+    d.className = 'matrix-cell empty';
+    d.style.width = outCellSize + 'px';
+    d.style.height = outCellSize + 'px';
+    if (outCellSize < 36) d.style.fontSize = '.75rem';
+    d.textContent = '—';
+    $('convOutput').appendChild(d);
+  }
+  $('convStepInfo').textContent = '';
+}
+
+function resetConvDemo() {
+  if (convAnimTimer) clearInterval(convAnimTimer);
+  initConvDemo();
+}
+
+function runConvDemo() {
+  if (convAnimTimer) clearInterval(convAnimTimer);
+  const inputSize = parseInt($('convInputSize').value);
+  const ks = parseInt($('convKernelSize').value);
+  const stride = parseInt($('convStride').value);
+  const pad = parseInt($('convPadding').value);
+  const paddedSize = inputSize + 2 * pad;
+  const outSize = Math.floor((paddedSize - ks) / stride) + 1;
+  const outCellSize = getCellSize(outSize);
+
+  let padded = [];
+  for (let i = 0; i < paddedSize; i++) {
+    padded[i] = [];
+    for (let j = 0; j < paddedSize; j++) {
+      if (i < pad || i >= pad + inputSize || j < pad || j >= pad + inputSize) {
+        padded[i][j] = 0;
+      } else {
+        padded[i][j] = convInputData[i - pad][j - pad];
+      }
+    }
+  }
+
+  const output = [];
+  for (let i = 0; i < outSize; i++) {
+    output[i] = [];
+    for (let j = 0; j < outSize; j++) {
+      let sum = 0;
+      for (let m = 0; m < ks; m++) {
+        for (let n = 0; n < ks; n++) {
+          sum += padded[i * stride + m][j * stride + n] * convKernelData[m][n];
+        }
+      }
+      output[i][j] = sum;
+    }
+  }
+
+  $('convOutput').style.gridTemplateColumns = `repeat(${outSize},${outCellSize}px)`;
+  $('convOutput').innerHTML = '';
+  for (let i = 0; i < outSize; i++) {
+    for (let j = 0; j < outSize; j++) {
+      const d = document.createElement('div');
+      d.className = 'matrix-cell empty';
+      d.style.width = outCellSize + 'px';
+      d.style.height = outCellSize + 'px';
+      if (outCellSize < 36) d.style.fontSize = '.75rem';
+      d.textContent = '—';
+      $('convOutput').appendChild(d);
+    }
+  }
+
+  let step = 0;
+  const total = outSize * outSize;
+  convAnimTimer = setInterval(() => {
+    if (step >= total) {
+      clearInterval(convAnimTimer);
+      $('convStepInfo').textContent = `卷积完成！输出尺寸: ${outSize}×${outSize}`;
+      return;
+    }
+    const oi = Math.floor(step / outSize);
+    const oj = step % outSize;
+    const outCells = $('convOutput').children;
+    const oc = outCells[step];
+    oc.textContent = output[oi][oj];
+    const t = clamp((output[oi][oj] + 50) / 100, 0, 1);
+    const hue = 220 - t * 170;
+    oc.style.background = `hsla(${hue}, 60%, 40%, 0.35)`;
+    oc.style.color = `hsl(${hue}, 70%, 75%)`;
+    oc.classList.add('highlight');
+    setTimeout(() => oc.classList.remove('highlight'), 300);
+
+    const inCells = $('convInput').children;
+    for (let r = 0; r < paddedSize * paddedSize; r++) {
+      inCells[r].style.outline = 'none';
+      inCells[r].style.outlineOffset = '';
+    }
+    for (let m = 0; m < ks; m++) {
+      for (let n = 0; n < ks; n++) {
+        const ir = oi * stride + m;
+        const ic = oj * stride + n;
+        const idx = ir * paddedSize + ic;
+        if (idx < inCells.length) {
+          inCells[idx].style.outline = '2px solid var(--accent)';
+          inCells[idx].style.outlineOffset = '-1px';
+        }
+      }
+    }
+
+    $('convStepInfo').textContent = `位置 (${oi},${oj}): 计算值 = ${output[oi][oj]}`;
+    step++;
+  }, 400);
+}
+
+function makeEditablePoolMatrix(container, rows, cols, values, cellSize = 44) {
+  container.innerHTML = '';
+  container.style.gridTemplateColumns = `repeat(${cols},${cellSize}px)`;
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const d = document.createElement('div');
+      d.className = 'matrix-cell editable';
+      d.style.width = cellSize + 'px';
+      d.style.height = cellSize + 'px';
+      if (cellSize < 36) d.style.fontSize = '.75rem';
+      const v = values ? values[i][j] : rnd(-9, 9);
+      if (values) values[i][j] = v;
+      const inp = document.createElement('input');
+      inp.type = 'number';
+      inp.value = v;
+      inp.dataset.row = i;
+      inp.dataset.col = j;
+      inp.addEventListener('change', function() {
+        const r = parseInt(this.dataset.row);
+        const c = parseInt(this.dataset.col);
+        poolInputData[r][c] = parseInt(this.value) || 0;
+      });
+      inp.addEventListener('focus', function() { this.select(); });
+      const t = clamp((v + 10) / 20, 0, 1);
+      const hue = 220 - t * 170;
+      d.style.background = `hsla(${hue}, 60%, 40%, 0.25)`;
+      d.style.color = `hsl(${hue}, 70%, 70%)`;
+      d.appendChild(inp);
+      container.appendChild(d);
+    }
+  }
+}
+
+function initPoolDemo() {
+  const inputSize = parseInt($('poolInputSize').value);
+  const cellSize = getCellSize(inputSize);
+  poolInputData = randomMatrix(inputSize, inputSize);
+  $('poolInputLabel').textContent = `输入矩阵 (${inputSize}×${inputSize})`;
+  makeEditablePoolMatrix($('poolInput'), inputSize, inputSize, poolInputData, cellSize);
+  const ps = parseInt($('poolSize').value);
+  const st = parseInt($('poolStride').value);
+  const os = Math.floor((inputSize - ps) / st) + 1;
+  const outCellSize = getCellSize(os);
+  $('poolOutput').style.gridTemplateColumns = `repeat(${os},${outCellSize}px)`;
+  $('poolOutput').innerHTML = '';
+  for (let i = 0; i < os * os; i++) {
+    const d = document.createElement('div');
+    d.className = 'matrix-cell empty';
+    d.style.width = outCellSize + 'px';
+    d.style.height = outCellSize + 'px';
+    if (outCellSize < 36) d.style.fontSize = '.75rem';
+    d.textContent = '—';
+    $('poolOutput').appendChild(d);
+  }
+  $('poolStepInfo').textContent = '';
+}
+
+function resetPoolDemo() {
+  if (poolAnimTimer) clearInterval(poolAnimTimer);
+  initPoolDemo();
+}
+
+function runPoolDemo() {
+  if (poolAnimTimer) clearInterval(poolAnimTimer);
+  const type = $('poolType').value;
+  const ps = parseInt($('poolSize').value);
+  const st = parseInt($('poolStride').value);
+  const inputSize = parseInt($('poolInputSize').value);
+  const outSize = Math.floor((inputSize - ps) / st) + 1;
+  const outCellSize = getCellSize(outSize);
+
+  const output = [];
+  for (let i = 0; i < outSize; i++) {
+    output[i] = [];
+    for (let j = 0; j < outSize; j++) {
+      const vals = [];
+      for (let m = 0; m < ps; m++) {
+        for (let n = 0; n < ps; n++) {
+          vals.push(poolInputData[i * st + m][j * st + n]);
+        }
+      }
+      output[i][j] = type === 'max' ? Math.max(...vals) : Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10;
+    }
+  }
+
+  $('poolOutput').style.gridTemplateColumns = `repeat(${outSize},${outCellSize}px)`;
+  $('poolOutput').innerHTML = '';
+  for (let i = 0; i < outSize; i++) {
+    for (let j = 0; j < outSize; j++) {
+      const d = document.createElement('div');
+      d.className = 'matrix-cell empty';
+      d.style.width = outCellSize + 'px';
+      d.style.height = outCellSize + 'px';
+      if (outCellSize < 36) d.style.fontSize = '.75rem';
+      d.textContent = '—';
+      $('poolOutput').appendChild(d);
+    }
+  }
+
+  let step = 0;
+  const total = outSize * outSize;
+  poolAnimTimer = setInterval(() => {
+    if (step >= total) {
+      clearInterval(poolAnimTimer);
+      $('poolStepInfo').textContent = `${type === 'max' ? 'Max' : 'Average'} Pooling 完成！`;
+      return;
+    }
+    const oi = Math.floor(step / outSize);
+    const oj = step % outSize;
+    const outCells = $('poolOutput').children;
+    const oc = outCells[step];
+    oc.textContent = output[oi][oj];
+    const t = clamp((output[oi][oj] + 10) / 20, 0, 1);
+    const hue = 220 - t * 170;
+    oc.style.background = `hsla(${hue}, 60%, 40%, 0.35)`;
+    oc.style.color = `hsl(${hue}, 70%, 75%)`;
+    oc.classList.add('highlight');
+    setTimeout(() => oc.classList.remove('highlight'), 300);
+
+    const inCells = $('poolInput').children;
+    for (let r = 0; r < inputSize * inputSize; r++) {
+      inCells[r].style.outline = 'none';
+    }
+    let maxVal = -Infinity, maxIdx = -1;
+    for (let m = 0; m < ps; m++) {
+      for (let n = 0; n < ps; n++) {
+        const ir = oi * st + m;
+        const ic = oj * st + n;
+        const idx = ir * inputSize + ic;
+        inCells[idx].style.outline = '2px solid var(--pink)';
+        inCells[idx].style.outlineOffset = '-1px';
+        if (type === 'max' && poolInputData[ir][ic] > maxVal) {
+          maxVal = poolInputData[ir][ic];
+          maxIdx = idx;
+        }
+      }
+    }
+    if (type === 'max' && maxIdx >= 0) {
+      inCells[maxIdx].style.outline = '3px solid var(--orange)';
+    }
+
+    const label = type === 'max' ? '最大值' : '平均值';
+    $('poolStepInfo').textContent = `窗口 (${oi},${oj}): ${label} = ${output[oi][oj]}`;
+    step++;
+  }, 500);
+}
+
+function getThemeColors() {
+  const style = getComputedStyle(document.documentElement);
+  const isDark = getTheme() === 'dark';
+  return {
+    gridLine: isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)',
+    gridLineLight: isDark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.05)',
+    textLabel: isDark ? 'rgba(255,255,255,.3)' : 'rgba(0,0,0,.4)',
+    connLine: isDark ? 'rgba(99,102,241,' : 'rgba(79,70,229,',
+    dotGlow: isDark ? 'rgba(99,102,241,' : 'rgba(79,70,229,',
+  };
+}
+
+function drawActivation(canvasId, fn, color) {
+  const canvas = $(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = 30;
+  const colors = getThemeColors();
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.strokeStyle = colors.gridLine;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, H / 2);
+  ctx.lineTo(W - pad, H / 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(W / 2, pad);
+  ctx.lineTo(W / 2, H - pad);
+  ctx.stroke();
+
+  ctx.strokeStyle = colors.gridLineLight;
+  for (let i = -4; i <= 4; i++) {
+    if (i === 0) continue;
+    const x = W / 2 + i * (W - 2 * pad) / 8;
+    ctx.beginPath();
+    ctx.moveTo(x, pad);
+    ctx.lineTo(x, H - pad);
+    ctx.stroke();
+    const y = H / 2 + i * (H - 2 * pad) / 8;
+    ctx.beginPath();
+    ctx.moveTo(pad, y);
+    ctx.lineTo(W - pad, y);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  const xRange = 6;
+  const steps = 300;
+  for (let i = 0; i <= steps; i++) {
+    const xVal = -xRange / 2 + (xRange / steps) * i;
+    const yVal = fn(xVal);
+    const px = pad + ((xVal + xRange / 2) / xRange) * (W - 2 * pad);
+    const py = H - pad - ((yVal + 3) / 6) * (H - 2 * pad);
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  ctx.fillStyle = colors.textLabel;
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  for (let i = -2; i <= 2; i++) {
+    if (i === 0) continue;
+    const x = W / 2 + i * (W - 2 * pad) / 4;
+    ctx.fillText(i.toString(), x, H / 2 + 15);
+  }
+  ctx.textAlign = 'right';
+  for (let i = -2; i <= 2; i++) {
+    if (i === 0) continue;
+    const y = H / 2 - i * (H - 2 * pad) / 4;
+    ctx.fillText(i.toString(), W / 2 - 8, y + 4);
+  }
+  ctx.fillText('0', W / 2 - 8, H / 2 + 15);
+
+  ctx.fillStyle = color;
+  ctx.font = '12px JetBrains Mono, monospace';
+  ctx.textAlign = 'left';
+  const labels = {
+    actCanvas_relu: 'ReLU: max(0, x)',
+    actCanvas_sigmoid: 'σ(x) = 1/(1+e⁻ˣ)',
+    actCanvas_tanh: 'tanh(x)',
+    actCanvas_leaky: 'Leaky ReLU (α=0.01)'
+  };
+  ctx.fillText(labels[canvasId] || '', pad + 5, pad + 15);
+}
+
+function initActivations() {
+  drawActivation('actCanvas_relu', x => Math.max(0, x), '#3b82f6');
+  drawActivation('actCanvas_sigmoid', x => 1 / (1 + Math.exp(-x)), '#10b981');
+  drawActivation('actCanvas_tanh', x => Math.tanh(x), '#f59e0b');
+  drawActivation('actCanvas_leaky', x => x > 0 ? x : 0.01 * x, '#ec4899');
+}
+
+function initHeroCanvas() {
+  const canvas = $('heroCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  let t = 0;
+  const colors = getThemeColors();
+
+  if (heroAnimFrameId) {
+    cancelAnimationFrame(heroAnimFrameId);
+    heroAnimFrameId = null;
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    t += 0.008;
+
+    const layers = [
+      { x: 50, w: 160, h: 200, label: 'Input', color: '#10b981' },
+      { x: 220, w: 80, h: 160, label: 'Conv', color: '#3b82f6' },
+      { x: 320, w: 50, h: 100, label: 'Pool', color: '#ec4899' },
+      { x: 400, w: 70, h: 140, label: 'Conv', color: '#3b82f6' },
+      { x: 500, w: 45, h: 90, label: 'Pool', color: '#ec4899' },
+      { x: 580, w: 30, h: 60, label: 'Conv', color: '#3b82f6' },
+      { x: 650, w: 20, h: 40, label: 'Pool', color: '#ec4899' },
+      { x: 720, w: 15, h: 25, label: 'FC', color: '#f59e0b' },
+      { x: 790, w: 60, h: 15, label: 'Output', color: '#10b981' }
+    ];
+
+    layers.forEach((l, i) => {
+      const yOff = Math.sin(t + i * 0.5) * 3;
+      const y = (H - l.h) / 2 + yOff;
+      const grd = ctx.createLinearGradient(l.x, y, l.x, y + l.h);
+      grd.addColorStop(0, l.color + '40');
+      grd.addColorStop(1, l.color + '15');
+      ctx.fillStyle = grd;
+      ctx.strokeStyle = l.color + '60';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(l.x, y, l.w, l.h, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = l.color + 'cc';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(l.label, l.x + l.w / 2, y + l.h + 16);
+    });
+
+    for (let i = 0; i < layers.length - 1; i++) {
+      const a = layers[i], b = layers[i + 1];
+      const ax = a.x + a.w, ay = H / 2 + Math.sin(t + i * 0.5) * 3 + a.h / 2;
+      const bx = b.x, by = H / 2 + Math.sin(t + (i + 1) * 0.5) * 3 + b.h / 2;
+      const pulse = (Math.sin(t * 3 + i) + 1) / 2;
+
+      ctx.strokeStyle = `${colors.connLine}${0.15 + pulse * 0.2})`;
+      ctx.lineWidth = 1 + pulse;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.stroke();
+
+      const dx = ax + (bx - ax) * ((t * 0.5 + i * 0.3) % 1);
+      const dy = ay + (by - ay) * ((t * 0.5 + i * 0.3) % 1);
+      ctx.beginPath();
+      ctx.arc(dx, dy, 2 + pulse, 0, Math.PI * 2);
+      ctx.fillStyle = `${colors.dotGlow}${0.3 + pulse * 0.5})`;
+      ctx.fill();
+    }
+
+    heroAnimFrameId = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTheme(getTheme());
+
+  document.querySelectorAll('.card').forEach(c => {
+    c.style.opacity = '0';
+    c.style.transform = 'translateY(20px)';
+    c.style.transition = 'opacity .6s ease, transform .6s ease';
+    observer.observe(c);
+  });
+
+  initConvDemo();
+  initPoolDemo();
+  initActivations();
+  initHeroCanvas();
+});
+</script>
+</body>
+</html>
