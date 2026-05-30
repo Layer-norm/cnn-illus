@@ -3,32 +3,51 @@
 
 #include <QWidget>
 #include <QLabel>
-#include <QTabWidget>
+#include <QCheckBox>
 #include <QPainter>
 #include <QPainterPath>
+#include <QVector>
+#include <QPoint>
+#include <QMouseEvent>
+#include <QWheelEvent>
+
+struct ActivationFunc {
+    QString name;
+    QString formula;
+    double (*func)(double);
+    QColor color;
+    bool visible = true;
+};
 
 class ActivationCanvas : public QWidget
 {
     Q_OBJECT
 public:
-    using Func = double(*)(double);
-    ActivationCanvas(Func func, const QString &label, const QColor &color, QWidget *parent = nullptr);
-    void setBgColor(const QColor &bg) { m_bgColor = bg; update(); }
-    void setGridColor(const QColor &c) { m_gridColor = c; update(); }
-    void setAxisColor(const QColor &c) { m_axisColor = c; update(); }
-    void setTickColor(const QColor &c) { m_tickColor = c; update(); }
+    explicit ActivationCanvas(QWidget *parent = nullptr);
+    void setFunctions(const QVector<ActivationFunc> *funcs) { m_funcs = funcs; update(); }
+    void setThemeColors(const QColor &bg, const QColor &grid, const QColor &axis, const QColor &tick);
+
+public slots:
+    void resetView();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 private:
-    Func m_func;
-    QString m_label;
-    QColor m_color;
-    QColor m_bgColor = QColor("#111827");
-    QColor m_gridColor = QColor("#1a2035");
-    QColor m_axisColor = QColor("#64748b");
-    QColor m_tickColor = QColor("#64748b");
+    const QVector<ActivationFunc> *m_funcs = nullptr;
+    double m_centerX = 0.0, m_centerY = 0.0;
+    double m_scale = 70.0;  // pixels per unit
+    QPoint m_lastPos;
+    bool m_dragging = false;
+    QColor m_bgColor{"#111827"};
+    QColor m_gridColor{"#1e293b"};
+    QColor m_axisColor{"#64748b"};
+    QColor m_tickColor{"#64748b"};
 };
 
 class ActivationWidget : public QWidget
@@ -43,10 +62,15 @@ private:
     static double sigmoid(double x);
     static double tanh(double x);
     static double leakyRelu(double x);
+    static double silu(double x);
+    static double elu(double x);
+
     QLabel *m_title;
-    QWidget *m_formulaFrame;
-    QVector<QWidget*> m_frames;
-    QVector<ActivationCanvas*> m_canvases;
+    ActivationCanvas *m_canvas;
+    QVector<ActivationFunc> m_funcs;
+    QVector<QCheckBox*> m_checkBoxes;
+
+    void updateDisplay();
 };
 
 #endif // ACTIVATIONWIDGET_H
