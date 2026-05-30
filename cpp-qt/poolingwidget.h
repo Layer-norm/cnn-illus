@@ -8,6 +8,7 @@
 #include <QTimer>
 #include <QScrollArea>
 #include <QWheelEvent>
+#include <QFrame>
 #include <QVector>
 #include "convolutionwidget.h"
 
@@ -34,6 +35,9 @@ private:
     QPushButton *m_runBtn;
     QPushButton *m_resetBtn;
     QLabel *m_stepInfo;
+    QLabel *m_title;
+    QLabel *m_desc;
+    QFrame *m_ctrlFrame;
     QLabel *m_inputLabel;
     QLabel *m_outputLabel;
 
@@ -55,6 +59,9 @@ private:
     // Helpers
     void applyZoom();
     bool eventFilter(QObject *obj, QEvent *event) override;
+
+public:
+    void applyTheme();
 };
 
 #endif // POOLINGWIDGET_H

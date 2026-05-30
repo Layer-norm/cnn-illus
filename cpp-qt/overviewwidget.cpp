@@ -1,24 +1,46 @@
 #include "overviewwidget.h"
+#include "theme.h"
 #include <QVBoxLayout>
 #include <QLabel>
 
 OverviewWidget::OverviewWidget(QWidget *parent)
     : QWidget(parent)
 {
-    auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(20, 20, 20, 20);
-    layout->setSpacing(15);
+    auto *outerLayout = new QVBoxLayout(this);
+    outerLayout->setContentsMargins(20, 20, 20, 20);
+    outerLayout->setSpacing(15);
 
-    // Title
     auto *title = new QLabel(QString::fromUtf8("🏗️ CNN 网络总体框架"));
-    title->setStyleSheet("font-size: 16px; font-weight: bold; color: #e2e8f0;");
-    layout->addWidget(title);
+    title->setStyleSheet(g_theme.titleStyle());
+    outerLayout->addWidget(title);
 
     // Architecture canvas
     auto *canvas = new QWidget(this);
     canvas->setMinimumHeight(140);
-    canvas->setStyleSheet("background-color: #111827; border: 1px solid #232b42; border-radius: 8px;");
-    layout->addWidget(canvas);
+    canvas->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 8px;").arg(g_theme.baseBg).arg(g_theme.border));
+    outerLayout->addWidget(canvas);
+
+    // Content container for rebuildable content
+    m_contentWidget = new QWidget(this);
+    outerLayout->addWidget(m_contentWidget);
+    outerLayout->addStretch();
+
+    rebuildContent();
+}
+
+void OverviewWidget::rebuildContent()
+{
+    // Clear old
+    QLayoutItem *item;
+    while ((item = m_contentWidget->layout() ? m_contentWidget->layout()->takeAt(0) : nullptr) != nullptr) {
+        delete item->widget();
+        delete item;
+    }
+    delete m_contentWidget->layout();
+
+    auto *layout = new QVBoxLayout(m_contentWidget);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(15);
 
     // Core concepts
     struct Concept {
@@ -37,8 +59,8 @@ OverviewWidget::OverviewWidget(QWidget *parent)
     };
 
     for (const auto &c : concepts) {
-        auto *frame = new QWidget(this);
-        frame->setStyleSheet("background-color: #111827; border: 1px solid #232b42; border-radius: 8px;");
+        auto *frame = new QWidget(m_contentWidget);
+        frame->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 8px;").arg(g_theme.baseBg).arg(g_theme.border));
         auto *fl = new QVBoxLayout(frame);
         fl->setContentsMargins(15, 10, 15, 10);
 
@@ -47,7 +69,7 @@ OverviewWidget::OverviewWidget(QWidget *parent)
         fl->addWidget(ct);
 
         auto *cd = new QLabel(c.desc);
-        cd->setStyleSheet("font-size: 11px; color: #94a3b8;");
+        cd->setStyleSheet(QString("font-size: 11px; color: %1;").arg(g_theme.labelText));
         cd->setWordWrap(true);
         fl->addWidget(cd);
 
@@ -55,28 +77,44 @@ OverviewWidget::OverviewWidget(QWidget *parent)
     }
 
     // Formula
-    auto *formulaFrame = new QWidget(this);
-    formulaFrame->setStyleSheet("background-color: #1a2035; border: 1px solid #232b42; border-radius: 8px;");
+    auto *formulaFrame = new QWidget(m_contentWidget);
+    formulaFrame->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 8px;").arg(g_theme.panelBg).arg(g_theme.border));
     auto *formulaLayout = new QVBoxLayout(formulaFrame);
     formulaLayout->setContentsMargins(15, 12, 15, 12);
 
     auto *formulaTitle = new QLabel(QString::fromUtf8("📐 输出尺寸计算公式"));
-    formulaTitle->setStyleSheet("font-size: 13px; font-weight: bold; color: #06b6d4;");
+    formulaTitle->setStyleSheet(QString("font-size: 13px; font-weight: bold; color: %1;").arg(g_theme.cyan));
     formulaLayout->addWidget(formulaTitle);
 
     auto *formula = new QLabel(QString::fromUtf8("O = ⌊(I − K + 2P) / S⌋ + 1"));
-    formula->setStyleSheet("font-size: 16px; font-weight: bold; color: #06b6d4; padding: 8px 0;");
+    formula->setStyleSheet(QString("font-size: 16px; font-weight: bold; color: %1; padding: 8px 0;").arg(g_theme.cyan));
     formula->setAlignment(Qt::AlignCenter);
     formulaLayout->addWidget(formula);
 
     auto *desc = new QLabel(QString::fromUtf8("O = 输出尺寸  I = 输入尺寸  K = 卷积核/池化窗口大小  P = 填充大小  S = 步幅"));
-    desc->setStyleSheet("font-size: 11px; color: #64748b;");
+    desc->setStyleSheet(QString("font-size: 11px; color: %1;").arg(g_theme.mutedText));
     desc->setAlignment(Qt::AlignCenter);
     desc->setWordWrap(true);
     formulaLayout->addWidget(desc);
 
     layout->addWidget(formulaFrame);
     layout->addStretch();
+}
+
+void OverviewWidget::applyTheme()
+{
+    // Update the title (just one, easy to find)
+    auto *title = findChild<QLabel*>();
+    if (title) title->setStyleSheet(QString("font-size: 16px; font-weight: bold; color: %1;").arg(g_theme.titleText));
+
+    // Update canvas
+    auto *canvas = findChild<QWidget*>();
+    if (canvas && canvas != m_contentWidget) {
+        canvas->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 8px;").arg(g_theme.baseBg).arg(g_theme.border));
+    }
+
+    // Rebuild content cards and formula
+    rebuildContent();
 }
 
 void OverviewWidget::paintEvent(QPaintEvent *event)

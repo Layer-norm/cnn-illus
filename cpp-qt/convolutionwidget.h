@@ -12,6 +12,7 @@
 #include <QTimer>
 #include <QWheelEvent>
 #include <QScrollArea>
+#include <QFrame>
 #include <QVector>
 
 class MatrixGrid : public QWidget
@@ -34,6 +35,7 @@ public:
 
     static int cellSize(int matrixSize);
     void setZoomFactor(double factor);
+    void applyTheme();
 
 signals:
     void cellChanged(int r, int c, int value);
@@ -74,6 +76,9 @@ private:
     QString cellFgColor(int val, int lo = -10, int hi = 10);
 
     // Controls
+    QLabel *m_title;
+    QLabel *m_desc;
+    QFrame *m_ctrlFrame;
     QComboBox *m_inputSizeCombo;
     QComboBox *m_kernelSizeCombo;
     QComboBox *m_strideCombo;
@@ -115,6 +120,9 @@ private:
     // Helpers
     void applyZoom();
     bool eventFilter(QObject *obj, QEvent *event) override;
+
+public:
+    void applyTheme();
 };
 
 #endif // CONVOLUTIONWIDGET_H

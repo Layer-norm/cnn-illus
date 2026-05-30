@@ -1,4 +1,5 @@
 #include "convolutionwidget.h"
+#include "theme.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFrame>
@@ -65,8 +66,8 @@ void MatrixGrid::buildGrid(const QVector<QVector<int>> *data)
             int v = (i < m_data.size() && j < m_data[i].size()) ? m_data[i][j] : 0;
             auto *cell = new QWidget(this);
             cell->setFixedSize(cs, cs);
-            cell->setStyleSheet(QString("background-color: %1; border: 1px solid #232b42; border-radius: 3px;")
-                                .arg(valueColor(v).name()));
+            cell->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 3px;")
+                                .arg(valueColor(v).name()).arg(g_theme.border));
             cell->setProperty("row", i);
             cell->setProperty("col", j);
 
@@ -95,8 +96,8 @@ void MatrixGrid::buildGrid(const QVector<QVector<int>> *data)
                     entry->setStyleSheet(QString(
                         "QLineEdit { background: transparent; color: %1; font-weight: bold; font-size: %2px; border: none; }"
                     ).arg(valueColor(val).lighter(150).name()).arg(fontSize));
-                    cell->setStyleSheet(QString("background-color: %1; border: 1px solid #232b42; border-radius: 3px;")
-                                        .arg(valueColor(val).name()));
+                    cell->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 3px;")
+                                        .arg(valueColor(val).name()).arg(g_theme.border));
                     emit cellChanged(i, j, val);
                 });
                 m_entries[i][j] = entry;
@@ -116,6 +117,11 @@ void MatrixGrid::buildGrid(const QVector<QVector<int>> *data)
 void MatrixGrid::setZoomFactor(double factor)
 {
     m_zoomFactor = factor;
+}
+
+void MatrixGrid::applyTheme()
+{
+    rebuild(m_rows, m_cols);
 }
 
 void MatrixGrid::syncFromWidgets()
@@ -176,8 +182,8 @@ void MatrixGrid::clearHighlights()
             auto *item = m_grid->itemAtPosition(i, j);
             if (item && item->widget()) {
                 item->widget()->setStyleSheet(
-                    QString("background-color: %1; border: 1px solid #232b42; border-radius: 3px;")
-                    .arg(valueColor(m_data[i][j]).name()));
+                    QString("background-color: %1; border: 1px solid %2; border-radius: 3px;")
+                    .arg(valueColor(m_data[i][j]).name()).arg(g_theme.border));
             }
         }
     }
@@ -197,8 +203,8 @@ void MatrixGrid::setOutputCell(int r, int c, const QString &text, int value)
         lbl->setStyleSheet(QString("color: %1; font-weight: bold; font-size: %2px; background: transparent;")
                           .arg(QColor::fromHslF(std::clamp(220.0 - std::clamp(double(value + 50) / 100, 0.0, 1.0) * 170.0, 0.0, 360.0) / 360.0, 0.7, 0.65).name()).arg(fs));
     }
-    w->setStyleSheet(QString("background-color: %1; border: 1px solid #232b42; border-radius: 3px;")
-                    .arg(QColor::fromHslF(std::clamp(220.0 - std::clamp(double(value + 50) / 100, 0.0, 1.0) * 170.0, 0.0, 360.0) / 360.0, 0.6, 0.35).name()));
+    w->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 3px;")
+                    .arg(QColor::fromHslF(std::clamp(220.0 - std::clamp(double(value + 50) / 100, 0.0, 1.0) * 170.0, 0.0, 360.0) / 360.0, 0.6, 0.35).name()).arg(g_theme.border));
 }
 
 void MatrixGrid::rebuild(int rows, int cols, const QVector<QVector<int>> *data)
@@ -254,35 +260,30 @@ ConvolutionWidget::ConvolutionWidget(QWidget *parent)
     outerLayout->setSpacing(10);
 
     // Title
-    auto *title = new QLabel(QString::fromUtf8("🎮 卷积运算交互演示"));
-    title->setStyleSheet("font-size: 15px; font-weight: bold; color: #e2e8f0;");
-    outerLayout->addWidget(title);
+    m_title = new QLabel(QString::fromUtf8("🎮 卷积运算交互演示"));
+    m_title->setStyleSheet(g_theme.titleStyle());
+    outerLayout->addWidget(m_title);
 
-    auto *desc = new QLabel(QString::fromUtf8("点击单元格可自定义数值，点击「执行卷积」观察滑动计算过程。"));
-    desc->setStyleSheet("font-size: 11px; color: #64748b;");
-    outerLayout->addWidget(desc);
+    m_desc = new QLabel(QString::fromUtf8("点击单元格可自定义数值，点击「执行卷积」观察滑动计算过程。"));
+    m_desc->setStyleSheet(g_theme.descStyle());
+    outerLayout->addWidget(m_desc);
 
     // Controls
-    auto *ctrlFrame = new QFrame(this);
-    ctrlFrame->setStyleSheet("QFrame { background-color: #1a2035; border: 1px solid #232b42; border-radius: 8px; }");
-    auto *ctrlLayout = new QHBoxLayout(ctrlFrame);
+    m_ctrlFrame = new QFrame(this);
+    m_ctrlFrame->setStyleSheet(g_theme.panelStyle());
+    auto *ctrlLayout = new QHBoxLayout(m_ctrlFrame);
     ctrlLayout->setContentsMargins(10, 8, 10, 8);
 
     auto addCombo = [&](const QString &label, QComboBox *&combo, const QStringList &items, bool triggerOnChange) {
-        auto *f = new QWidget(ctrlFrame);
+        auto *f = new QWidget(m_ctrlFrame);
         auto *fl = new QHBoxLayout(f);
         fl->setContentsMargins(0, 0, 0, 0);
         auto *lbl = new QLabel(label, f);
-        lbl->setStyleSheet("color: #94a3b8; font-size: 11px;");
+        lbl->setStyleSheet(g_theme.ctrlLabelStyle());
         fl->addWidget(lbl);
         combo = new QComboBox(f);
         combo->addItems(items);
-        combo->setStyleSheet(
-            "QComboBox { background: #232b42; color: #e2e8f0; border: 1px solid #1a2035; "
-            "border-radius: 4px; padding: 3px 6px; font-size: 11px; }"
-            "QComboBox::drop-down { border: none; }"
-            "QComboBox QAbstractItemView { background: #232b42; color: #e2e8f0; selection-background-color: #3b82f6; }"
-        );
+        combo->setStyleSheet(g_theme.comboStyle());
         if (triggerOnChange)
             QObject::connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ConvolutionWidget::onParamChanged);
         fl->addWidget(combo);
@@ -294,30 +295,22 @@ ConvolutionWidget::ConvolutionWidget(QWidget *parent)
     addCombo(QString::fromUtf8("步幅:"), m_strideCombo, {"1", "2"}, false);
     addCombo(QString::fromUtf8("填充:"), m_paddingCombo, {"0", "1", "2"}, true);
 
-    m_runBtn = new QPushButton(QString::fromUtf8("▶ 执行卷积"), ctrlFrame);
-    m_runBtn->setStyleSheet(
-        "QPushButton { background-color: #3b82f6; color: white; border: none; "
-        "border-radius: 4px; padding: 6px 14px; font-weight: bold; font-size: 11px; }"
-        "QPushButton:hover { background-color: #6366f1; }"
-    );
+    m_runBtn = new QPushButton(QString::fromUtf8("▶ 执行卷积"), m_ctrlFrame);
+    m_runBtn->setStyleSheet(g_theme.btnPrimStyle());
     connect(m_runBtn, &QPushButton::clicked, this, &ConvolutionWidget::runConvolution);
     ctrlLayout->addWidget(m_runBtn);
 
-    m_resetBtn = new QPushButton(QString::fromUtf8("↻ 重置"), ctrlFrame);
-    m_resetBtn->setStyleSheet(
-        "QPushButton { background-color: #232b42; color: #e2e8f0; border: none; "
-        "border-radius: 4px; padding: 6px 14px; font-size: 11px; }"
-        "QPushButton:hover { background-color: #1a2035; }"
-    );
+    m_resetBtn = new QPushButton(QString::fromUtf8("↻ 重置"), m_ctrlFrame);
+    m_resetBtn->setStyleSheet(g_theme.btnSecStyle());
     connect(m_resetBtn, &QPushButton::clicked, this, &ConvolutionWidget::resetDemo);
     ctrlLayout->addWidget(m_resetBtn);
 
-    m_stepInfo = new QLabel("", ctrlFrame);
-    m_stepInfo->setStyleSheet("color: #06b6d4; font-size: 11px;");
+    m_stepInfo = new QLabel("", m_ctrlFrame);
+    m_stepInfo->setStyleSheet(QString("color: %1; font-size: 11px;").arg(g_theme.stepInfoColor));
     ctrlLayout->addWidget(m_stepInfo);
     ctrlLayout->addStretch();
 
-    outerLayout->addWidget(ctrlFrame);
+    outerLayout->addWidget(m_ctrlFrame);
 
     // Matrix area (scrollable)
     auto *scrollArea = new QScrollArea(this);
@@ -339,7 +332,7 @@ ConvolutionWidget::ConvolutionWidget(QWidget *parent)
     m_inputGroupLayout->setSpacing(4);
 
     m_inputLabel = new QLabel("", m_inputGroup);
-    m_inputLabel->setStyleSheet("font-size: 10px; font-weight: bold; color: #64748b;");
+    m_inputLabel->setStyleSheet(g_theme.labelStyle());
     m_inputGroupLayout->addWidget(m_inputLabel);
 
     m_inputGridContainer = new QWidget(m_inputGroup);
@@ -348,7 +341,7 @@ ConvolutionWidget::ConvolutionWidget(QWidget *parent)
     // Kernel group
     m_kernelMatrix = new MatrixGrid(3, 3, true, false, this);
     m_kernelLabel = new QLabel(QString::fromUtf8("卷积核 (3×3)"), this);
-    m_kernelLabel->setStyleSheet("font-size: 10px; font-weight: bold; color: #64748b;");
+    m_kernelLabel->setStyleSheet(g_theme.labelStyle());
 
     auto *kernelGroup = new QWidget(matrixArea);
     auto *kernelGroupLayout = new QVBoxLayout(kernelGroup);
@@ -357,7 +350,7 @@ ConvolutionWidget::ConvolutionWidget(QWidget *parent)
     kernelGroupLayout->addWidget(m_kernelMatrix);
 
     auto *arrowLabel = new QLabel(QString::fromUtf8("→"), matrixArea);
-    arrowLabel->setStyleSheet("font-size: 28px; color: #3b82f6;");
+    arrowLabel->setStyleSheet(QString("font-size: 28px; color: %1;").arg(g_theme.accent));
 
     // Output group
     m_outputMatrix = new MatrixGrid(1, 1, false, true, this);
@@ -366,7 +359,7 @@ ConvolutionWidget::ConvolutionWidget(QWidget *parent)
     auto *outputGroupLayout = new QVBoxLayout(outputGroup);
     outputGroupLayout->setSpacing(4);
     m_outputLabel = new QLabel(QString::fromUtf8("输出特征图"), this);
-    m_outputLabel->setStyleSheet("font-size: 10px; font-weight: bold; color: #64748b;");
+    m_outputLabel->setStyleSheet(g_theme.labelStyle());
     outputGroupLayout->addWidget(m_outputLabel);
     outputGroupLayout->addWidget(m_outputMatrix);
 
@@ -418,14 +411,14 @@ void ConvolutionWidget::rebuildInputGrid(int paddedSize, int inputSize, int pad,
             if (isPad) {
                 // Padding cell: gray, show "0", non-editable
                 cell->setStyleSheet(
-                    QString("background-color: %1; border: 1px dashed #64748b; border-radius: 3px;")
-                    .arg("#1a2035"));
+                    QString("background-color: %1; border: 1px dashed %2; border-radius: 3px;")
+                    .arg(g_theme.paddingBg).arg(g_theme.mutedText));
                 auto *lbl = new QLabel("0", cell);
                 lbl->setAlignment(Qt::AlignCenter);
                 lbl->setGeometry(0, 0, cellSz, cellSz);
 
                 int fs = std::max(7, int(11 * cellSz / MatrixGrid::cellSize(std::max(paddedSize, 3))));
-                lbl->setStyleSheet(QString("color: #64748b; font-weight: bold; font-size: %1px; background: transparent;").arg(fs));
+                lbl->setStyleSheet(QString("color: %1; font-weight: bold; font-size: %2px; background: transparent;").arg(g_theme.mutedText).arg(fs));
             } else {
                 // Content cell: editable
                 int ri = i - pad;
@@ -434,7 +427,7 @@ void ConvolutionWidget::rebuildInputGrid(int paddedSize, int inputSize, int pad,
                 QString bg = cellBgColor(v);
                 QString fg = cellFgColor(v);
 
-                cell->setStyleSheet(QString("background-color: %1; border: 1px solid #232b42; border-radius: 3px;").arg(bg));
+                cell->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 3px;").arg(bg).arg(g_theme.border));
 
                 auto *entry = new QLineEdit(cell);
                 entry->setText(QString::number(v));
@@ -553,10 +546,15 @@ void ConvolutionWidget::applyZoom()
 
     // Update label font sizes
     int lfs = std::max(7, int(10 * m_zoomFactor));
-    QString labelStyle = QString("font-size: %1px; font-weight: bold; color: #64748b;").arg(lfs);
+    QString labelStyle = QString("font-size: %1px; font-weight: bold; color: %2;").arg(lfs).arg(g_theme.mutedText);
     m_inputLabel->setStyleSheet(labelStyle);
     m_kernelLabel->setStyleSheet(labelStyle);
     m_outputLabel->setStyleSheet(labelStyle);
+    
+    // Ensure control styles follow theme
+    m_runBtn->setStyleSheet(g_theme.btnPrimStyle());
+    m_resetBtn->setStyleSheet(g_theme.btnSecStyle());
+    m_stepInfo->setStyleSheet(QString("color: %1; font-size: 11px;").arg(g_theme.stepInfoColor));
 }
 
 void ConvolutionWidget::resetDemo()
@@ -652,13 +650,14 @@ void ConvolutionWidget::animationStep()
             bool isPad = (i < pad || i >= pad + m_animInputSize || j < pad || j >= pad + m_animInputSize);
             if (isPad) {
                 cell->setStyleSheet(
-                    "background-color: #1a2035; border: 1px dashed #64748b; border-radius: 3px;");
+                    QString("background-color: %1; border: 1px dashed %2; border-radius: 3px;")
+                    .arg(g_theme.paddingBg).arg(g_theme.mutedText));
             } else {
                 int ri = i - pad;
                 int rj = j - pad;
                 int v = (ri < m_inputData.size() && rj < m_inputData[ri].size()) ? m_inputData[ri][rj] : 0;
-                cell->setStyleSheet(QString("background-color: %1; border: 1px solid #232b42; border-radius: 3px;")
-                                    .arg(cellBgColor(v)));
+                cell->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 3px;")
+                                    .arg(cellBgColor(v)).arg(g_theme.border));
             }
         }
     }
@@ -698,4 +697,47 @@ void ConvolutionWidget::animationStep()
 
     m_stepInfo->setText(QString::fromUtf8("位置 (%1,%2): 计算值 = %3").arg(oi).arg(oj).arg(val));
     m_animStep++;
+}
+
+void ConvolutionWidget::applyTheme()
+{
+    clearAnimation();
+
+    // Update title & description
+    m_title->setStyleSheet(g_theme.titleStyle());
+    m_desc->setStyleSheet(g_theme.descStyle());
+
+    // Update control panel
+    m_ctrlFrame->setStyleSheet(g_theme.panelStyle());
+    m_runBtn->setStyleSheet(g_theme.btnPrimStyle());
+    m_resetBtn->setStyleSheet(g_theme.btnSecStyle());
+    m_stepInfo->setStyleSheet(QString("color: %1; font-size: 11px;").arg(g_theme.stepInfoColor));
+
+    // Update combo box and label styles inside control panel
+    const auto combos = m_ctrlFrame->findChildren<QComboBox*>();
+    for (auto *combo : combos)
+        combo->setStyleSheet(g_theme.comboStyle());
+    const auto labels = m_ctrlFrame->findChildren<QLabel*>();
+    for (auto *lbl : labels) {
+        if (lbl != m_stepInfo)
+            lbl->setStyleSheet(g_theme.ctrlLabelStyle());
+    }
+
+    // Rebuild matrices with new theme colors
+    m_kernelMatrix->applyTheme();
+    m_outputMatrix->applyTheme();
+
+    int inputSize = m_inputSizeCombo->currentText().toInt();
+    int ks = m_kernelSizeCombo->currentText().toInt();
+    int pad = m_paddingCombo->currentText().toInt();
+    int paddedSize = inputSize + 2 * pad;
+    int cellSz = int(MatrixGrid::cellSize(std::max(paddedSize, ks)) * m_zoomFactor);
+    rebuildInputGrid(paddedSize, inputSize, pad, cellSz);
+
+    // Update labels
+    int lfs = std::max(7, int(10 * m_zoomFactor));
+    QString ls = QString("font-size: %1px; font-weight: bold; color: %2;").arg(lfs).arg(g_theme.mutedText);
+    m_inputLabel->setStyleSheet(ls);
+    m_kernelLabel->setStyleSheet(ls);
+    m_outputLabel->setStyleSheet(ls);
 }

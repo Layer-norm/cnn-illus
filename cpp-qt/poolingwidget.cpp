@@ -1,4 +1,5 @@
 #include "poolingwidget.h"
+#include "theme.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFrame>
@@ -14,35 +15,30 @@ PoolingWidget::PoolingWidget(QWidget *parent)
     layout->setContentsMargins(15, 15, 15, 15);
     layout->setSpacing(10);
 
-    auto *title = new QLabel(QString::fromUtf8("🎮 池化运算交互演示"));
-    title->setStyleSheet("font-size: 15px; font-weight: bold; color: #e2e8f0;");
-    layout->addWidget(title);
+    m_title = new QLabel(QString::fromUtf8("🎮 池化运算交互演示"));
+    m_title->setStyleSheet(g_theme.titleStyle());
+    layout->addWidget(m_title);
 
-    auto *desc = new QLabel(QString::fromUtf8("点击单元格可自定义数值，选择池化类型观察计算过程。"));
-    desc->setStyleSheet("font-size: 11px; color: #64748b;");
-    layout->addWidget(desc);
+    m_desc = new QLabel(QString::fromUtf8("点击单元格可自定义数值，选择池化类型观察计算过程。"));
+    m_desc->setStyleSheet(g_theme.descStyle());
+    layout->addWidget(m_desc);
 
     // Controls
-    auto *ctrlFrame = new QFrame(this);
-    ctrlFrame->setStyleSheet("QFrame { background-color: #1a2035; border: 1px solid #232b42; border-radius: 8px; }");
-    auto *ctrlLayout = new QHBoxLayout(ctrlFrame);
+    m_ctrlFrame = new QFrame(this);
+    m_ctrlFrame->setStyleSheet(g_theme.panelStyle());
+    auto *ctrlLayout = new QHBoxLayout(m_ctrlFrame);
     ctrlLayout->setContentsMargins(10, 8, 10, 8);
 
     auto addCombo = [&](const QString &label, QComboBox *&combo, const QStringList &items, bool triggerOnChange) {
-        auto *f = new QWidget(ctrlFrame);
+        auto *f = new QWidget(m_ctrlFrame);
         auto *fl = new QHBoxLayout(f);
         fl->setContentsMargins(0, 0, 0, 0);
         auto *lbl = new QLabel(label, f);
-        lbl->setStyleSheet("color: #94a3b8; font-size: 11px;");
+        lbl->setStyleSheet(g_theme.ctrlLabelStyle());
         fl->addWidget(lbl);
         combo = new QComboBox(f);
         combo->addItems(items);
-        combo->setStyleSheet(
-            "QComboBox { background: #232b42; color: #e2e8f0; border: 1px solid #1a2035; "
-            "border-radius: 4px; padding: 3px 6px; font-size: 11px; }"
-            "QComboBox::drop-down { border: none; }"
-            "QComboBox QAbstractItemView { background: #232b42; color: #e2e8f0; selection-background-color: #3b82f6; }"
-        );
+        combo->setStyleSheet(g_theme.comboStyle());
         if (triggerOnChange)
             QObject::connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &PoolingWidget::onParamChanged);
         fl->addWidget(combo);
@@ -54,30 +50,22 @@ PoolingWidget::PoolingWidget(QWidget *parent)
     addCombo(QString::fromUtf8("窗口大小:"), m_poolSizeCombo, {"2", "3"}, true);
     addCombo(QString::fromUtf8("步幅:"), m_strideCombo, {"2", "1"}, false);
 
-    m_runBtn = new QPushButton(QString::fromUtf8("▶ 执行池化"), ctrlFrame);
-    m_runBtn->setStyleSheet(
-        "QPushButton { background-color: #3b82f6; color: white; border: none; "
-        "border-radius: 4px; padding: 6px 14px; font-weight: bold; font-size: 11px; }"
-        "QPushButton:hover { background-color: #6366f1; }"
-    );
+    m_runBtn = new QPushButton(QString::fromUtf8("▶ 执行池化"), m_ctrlFrame);
+    m_runBtn->setStyleSheet(g_theme.btnPrimStyle());
     connect(m_runBtn, &QPushButton::clicked, this, &PoolingWidget::runPooling);
     ctrlLayout->addWidget(m_runBtn);
 
-    m_resetBtn = new QPushButton(QString::fromUtf8("↻ 重置"), ctrlFrame);
-    m_resetBtn->setStyleSheet(
-        "QPushButton { background-color: #232b42; color: #e2e8f0; border: none; "
-        "border-radius: 4px; padding: 6px 14px; font-size: 11px; }"
-        "QPushButton:hover { background-color: #1a2035; }"
-    );
+    m_resetBtn = new QPushButton(QString::fromUtf8("↻ 重置"), m_ctrlFrame);
+    m_resetBtn->setStyleSheet(g_theme.btnSecStyle());
     connect(m_resetBtn, &QPushButton::clicked, this, &PoolingWidget::resetDemo);
     ctrlLayout->addWidget(m_resetBtn);
 
-    m_stepInfo = new QLabel("", ctrlFrame);
-    m_stepInfo->setStyleSheet("color: #ec4899; font-size: 11px;");
+    m_stepInfo = new QLabel("", m_ctrlFrame);
+    m_stepInfo->setStyleSheet(QString("color: %1; font-size: 11px;").arg(g_theme.isDark ? "#ec4899" : "#be185d"));
     ctrlLayout->addWidget(m_stepInfo);
     ctrlLayout->addStretch();
 
-    layout->addWidget(ctrlFrame);
+    layout->addWidget(m_ctrlFrame);
 
     // Matrix area (scrollable, left-aligned like convolution)
     auto *scrollArea = new QScrollArea(this);
@@ -99,16 +87,16 @@ PoolingWidget::PoolingWidget(QWidget *parent)
     inputGroupLayout->setSpacing(4);
 
     m_inputLabel = new QLabel("", inputGroup);
-    m_inputLabel->setStyleSheet("font-size: 10px; font-weight: bold; color: #64748b;");
+    m_inputLabel->setStyleSheet(g_theme.labelStyle());
     inputGroupLayout->addWidget(m_inputLabel);
     inputGroupLayout->addWidget(m_inputMatrix);
 
     auto *outLabel = new QLabel(QString::fromUtf8("输出特征图"), matrixArea);
     m_outputLabel = outLabel;
-    outLabel->setStyleSheet("font-size: 10px; font-weight: bold; color: #64748b;");
+    outLabel->setStyleSheet(g_theme.labelStyle());
 
     auto *arrowLabel = new QLabel(QString::fromUtf8("→"), matrixArea);
-    arrowLabel->setStyleSheet("font-size: 28px; color: #3b82f6;");
+    arrowLabel->setStyleSheet(QString("font-size: 28px; color: %1;").arg(g_theme.accent));
 
     matrixLayout->addWidget(inputGroup);
     matrixLayout->addWidget(arrowLabel);
@@ -207,9 +195,42 @@ void PoolingWidget::applyZoom()
 
     // Update label font sizes
     int lfs = std::max(7, int(10 * m_zoomFactor));
-    QString labelStyle = QString("font-size: %1px; font-weight: bold; color: #64748b;").arg(lfs);
+    QString labelStyle = QString("font-size: %1px; font-weight: bold; color: %2;").arg(lfs).arg(g_theme.mutedText);
     m_inputLabel->setStyleSheet(labelStyle);
     m_outputLabel->setStyleSheet(labelStyle);
+}
+
+void PoolingWidget::applyTheme()
+{
+    clearAnimation();
+
+    // Update title & description
+    m_title->setStyleSheet(g_theme.titleStyle());
+    m_desc->setStyleSheet(g_theme.descStyle());
+
+    // Update control panel
+    m_ctrlFrame->setStyleSheet(g_theme.panelStyle());
+    m_runBtn->setStyleSheet(g_theme.btnPrimStyle());
+    m_resetBtn->setStyleSheet(g_theme.btnSecStyle());
+    m_stepInfo->setStyleSheet(QString("color: %1; font-size: 11px;").arg(g_theme.stepInfoColor));
+
+    // Update combo box and label styles inside control panel
+    const auto combos = m_ctrlFrame->findChildren<QComboBox*>();
+    for (auto *combo : combos)
+        combo->setStyleSheet(g_theme.comboStyle());
+    const auto labels = m_ctrlFrame->findChildren<QLabel*>();
+    for (auto *lbl : labels) {
+        if (lbl != m_stepInfo)
+            lbl->setStyleSheet(g_theme.ctrlLabelStyle());
+    }
+
+    m_inputMatrix->applyTheme();
+    m_outputMatrix->applyTheme();
+
+    int lfs = std::max(7, int(10 * m_zoomFactor));
+    QString ls = QString("font-size: %1px; font-weight: bold; color: %2;").arg(lfs).arg(g_theme.mutedText);
+    m_inputLabel->setStyleSheet(ls);
+    m_outputLabel->setStyleSheet(ls);
 }
 
 void PoolingWidget::resetDemo()

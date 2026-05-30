@@ -1,5 +1,27 @@
 #include <QApplication>
+#include <QPalette>
 #include "mainwindow.h"
+#include "theme.h"
+
+static void applyPalette()
+{
+    auto &t = g_theme;
+    QPalette p;
+    p.setColor(QPalette::Window, QColor(t.windowBg));
+    p.setColor(QPalette::WindowText, QColor(t.text));
+    p.setColor(QPalette::Base, QColor(t.baseBg));
+    p.setColor(QPalette::AlternateBase, QColor(t.panelBg));
+    p.setColor(QPalette::ToolTipBase, QColor(t.border));
+    p.setColor(QPalette::ToolTipText, QColor(t.text));
+    p.setColor(QPalette::Text, QColor(t.text));
+    p.setColor(QPalette::Button, QColor(t.border));
+    p.setColor(QPalette::ButtonText, QColor(t.text));
+    p.setColor(QPalette::BrightText, QColor("#ef4444"));
+    p.setColor(QPalette::Link, QColor(t.accent));
+    p.setColor(QPalette::Highlight, QColor(t.accent));
+    p.setColor(QPalette::HighlightedText, QColor("#ffffff"));
+    qApp->setPalette(p);
+}
 
 int main(int argc, char *argv[])
 {
@@ -7,22 +29,7 @@ int main(int argc, char *argv[])
     app.setApplicationName("CNN Visualizer");
     app.setStyle("Fusion");
 
-    // Dark theme palette
-    QPalette darkPalette;
-    darkPalette.setColor(QPalette::Window, QColor("#0a0e1a"));
-    darkPalette.setColor(QPalette::WindowText, QColor("#e2e8f0"));
-    darkPalette.setColor(QPalette::Base, QColor("#111827"));
-    darkPalette.setColor(QPalette::AlternateBase, QColor("#1a2035"));
-    darkPalette.setColor(QPalette::ToolTipBase, QColor("#232b42"));
-    darkPalette.setColor(QPalette::ToolTipText, QColor("#e2e8f0"));
-    darkPalette.setColor(QPalette::Text, QColor("#e2e8f0"));
-    darkPalette.setColor(QPalette::Button, QColor("#232b42"));
-    darkPalette.setColor(QPalette::ButtonText, QColor("#e2e8f0"));
-    darkPalette.setColor(QPalette::BrightText, QColor("#ef4444"));
-    darkPalette.setColor(QPalette::Link, QColor("#3b82f6"));
-    darkPalette.setColor(QPalette::Highlight, QColor("#3b82f6"));
-    darkPalette.setColor(QPalette::HighlightedText, QColor("#ffffff"));
-    app.setPalette(darkPalette);
+    applyPalette();
 
     MainWindow window;
     window.show();

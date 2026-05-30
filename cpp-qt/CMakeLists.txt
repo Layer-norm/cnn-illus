@@ -16,6 +16,7 @@ set(SOURCES
     poolingwidget.cpp
     activationwidget.cpp
     overviewwidget.cpp
+    theme.cpp
 )
 
 set(HEADERS
@@ -24,6 +25,7 @@ set(HEADERS
     poolingwidget.h
     activationwidget.h
     overviewwidget.h
+    theme.h
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})

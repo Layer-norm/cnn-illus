@@ -1,4 +1,5 @@
 #include "activationwidget.h"
+#include "theme.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -22,15 +23,15 @@ void ActivationCanvas::paintEvent(QPaintEvent *)
     int pad = 40;
 
     // Background
-    painter.fillRect(rect(), QColor("#111827"));
+    painter.fillRect(rect(), m_bgColor);
 
     // Axes
-    painter.setPen(QPen(QColor("#64748b"), 1));
+    painter.setPen(QPen(m_axisColor, 1));
     painter.drawLine(pad, H / 2, W - pad, H / 2);
     painter.drawLine(W / 2, pad, W / 2, H - pad);
 
     // Grid lines
-    painter.setPen(QPen(QColor("#1a2035"), 1));
+    painter.setPen(QPen(m_gridColor, 1));
     for (int i = -4; i <= 4; ++i) {
         if (i == 0) continue;
         int x = W / 2 + i * (W - 2 * pad) / 8;
@@ -42,7 +43,7 @@ void ActivationCanvas::paintEvent(QPaintEvent *)
     // Tick labels
     QFont tickFont("Consolas", 8);
     painter.setFont(tickFont);
-    painter.setPen(QColor("#64748b"));
+    painter.setPen(m_tickColor);
     for (int i = -4; i <= 4; ++i) {
         if (i == 0) continue;
         int x = W / 2 + i * (W - 2 * pad) / 8;
@@ -94,9 +95,9 @@ ActivationWidget::ActivationWidget(QWidget *parent)
     layout->setContentsMargins(15, 15, 15, 15);
     layout->setSpacing(12);
 
-    auto *title = new QLabel(QString::fromUtf8("⚡ 激活函数 Activation Functions"));
-    title->setStyleSheet("font-size: 15px; font-weight: bold; color: #e2e8f0;");
-    layout->addWidget(title);
+    m_title = new QLabel(QString::fromUtf8("⚡ 激活函数 Activation Functions"));
+    m_title->setStyleSheet(g_theme.titleStyle());
+    layout->addWidget(m_title);
 
     struct ActInfo {
         QString name;
@@ -113,7 +114,7 @@ ActivationWidget::ActivationWidget(QWidget *parent)
 
     for (const auto &act : acts) {
         auto *frame = new QFrame(this);
-        frame->setStyleSheet("QFrame { background-color: #111827; border: 1px solid #232b42; border-radius: 8px; }");
+        frame->setStyleSheet(QString("QFrame { background-color: %1; border: 1px solid %2; border-radius: 8px; }").arg(g_theme.baseBg).arg(g_theme.border));
         auto *fl = new QVBoxLayout(frame);
         fl->setContentsMargins(8, 8, 8, 8);
 
@@ -121,17 +122,19 @@ ActivationWidget::ActivationWidget(QWidget *parent)
         fl->addWidget(canvas);
 
         layout->addWidget(frame);
+        m_frames.append(frame);
+        m_canvases.append(canvas);
     }
 
     // Formula summary
     {
-        auto *frame = new QFrame(this);
-        frame->setStyleSheet("QFrame { background-color: #1a2035; border: 1px solid #232b42; border-radius: 8px; }");
-        auto *fl = new QVBoxLayout(frame);
+        m_formulaFrame = new QFrame(this);
+        m_formulaFrame->setStyleSheet(QString("QFrame { background-color: %1; border: 1px solid %2; border-radius: 8px; }").arg(g_theme.panelBg).arg(g_theme.border));
+        auto *fl = new QVBoxLayout(m_formulaFrame);
         fl->setContentsMargins(15, 10, 15, 10);
 
         auto addRow = [&](const QString &name, const QString &formula, const QString &color) {
-            auto *row = new QWidget(frame);
+            auto *row = new QWidget(m_formulaFrame);
             auto *rl = new QHBoxLayout(row);
             rl->setContentsMargins(0, 2, 0, 2);
 
@@ -153,8 +156,37 @@ ActivationWidget::ActivationWidget(QWidget *parent)
         addRow("Tanh", "f(x) = (eˣ − e⁻ˣ) / (eˣ + e⁻ˣ)", "#f59e0b");
         addRow("Leaky ReLU", "f(x) = x if x>0, αx if x≤0", "#ec4899");
 
-        layout->addWidget(frame);
+        layout->addWidget(m_formulaFrame);
+        m_frames.append(m_formulaFrame);
     }
 
     layout->addStretch();
+}
+
+void ActivationWidget::applyTheme()
+{
+    // Update title
+    m_title->setStyleSheet(g_theme.titleStyle());
+
+    // Update each canvas background and axis/grid colors
+    QColor base(g_theme.baseBg);
+    QColor grid(g_theme.border);
+    QColor axis(g_theme.mutedText);
+    QColor tick(g_theme.mutedText);
+    for (auto *canvas : m_canvases) {
+        canvas->setBgColor(base);
+        canvas->setGridColor(grid);
+        canvas->setAxisColor(axis);
+        canvas->setTickColor(tick);
+    }
+
+    // Update frame styles
+    for (int i = 0; i < m_frames.size(); ++i) {
+        auto *w = m_frames[i];
+        if (i < 4) { // activation canvases
+            w->setStyleSheet(QString("QFrame { background-color: %1; border: 1px solid %2; border-radius: 8px; }").arg(g_theme.baseBg).arg(g_theme.border));
+        } else { // formula frame
+            w->setStyleSheet(QString("QFrame { background-color: %1; border: 1px solid %2; border-radius: 8px; }").arg(g_theme.panelBg).arg(g_theme.border));
+        }
+    }
 }
