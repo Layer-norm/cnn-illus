@@ -61,19 +61,19 @@ PoolingWidget::PoolingWidget(QWidget *parent)
     ctrlLayout->addWidget(m_resetBtn);
 
     m_stepInfo = new QLabel("", m_ctrlFrame);
-    m_stepInfo->setStyleSheet(QString("color: %1; font-size: 11px;").arg(g_theme.isDark ? "#ec4899" : "#be185d"));
+    m_stepInfo->setStyleSheet(QString("color: %1; font-size: 11px;").arg(g_theme.stepInfoColor));
     ctrlLayout->addWidget(m_stepInfo);
     ctrlLayout->addStretch();
 
     layout->addWidget(m_ctrlFrame);
 
     // Matrix area (scrollable, left-aligned like convolution)
-    auto *scrollArea = new QScrollArea(this);
-    scrollArea->setWidgetResizable(true);
-    scrollArea->setStyleSheet("QScrollArea { border: none; background: transparent; }");
-    scrollArea->viewport()->installEventFilter(this);
+    m_scrollArea = new QScrollArea(this);
+    m_scrollArea->setWidgetResizable(true);
+    m_scrollArea->setStyleSheet("QScrollArea { border: none; background: transparent; }");
+    m_scrollArea->viewport()->installEventFilter(this);
 
-    auto *matrixArea = new QWidget(scrollArea);
+    auto *matrixArea = new QWidget(m_scrollArea);
     auto *matrixLayout = new QHBoxLayout(matrixArea);
     matrixLayout->setSpacing(20);
     matrixLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
@@ -108,8 +108,8 @@ PoolingWidget::PoolingWidget(QWidget *parent)
     outGroupLayout->addWidget(m_outputMatrix);
     matrixLayout->addWidget(outGroup);
 
-    scrollArea->setWidget(matrixArea);
-    layout->addWidget(scrollArea);
+    m_scrollArea->setWidget(matrixArea);
+    layout->addWidget(m_scrollArea);
 
     connect(m_animTimer, &QTimer::timeout, this, &PoolingWidget::animationStep);
     m_inputSizeCombo->setCurrentText("4");
@@ -195,7 +195,7 @@ void PoolingWidget::applyZoom()
 
     // Update label font sizes
     int lfs = std::max(7, int(10 * m_zoomFactor));
-    QString labelStyle = QString("font-size: %1px; font-weight: bold; color: %2;").arg(lfs).arg(g_theme.mutedText);
+    QString labelStyle = QString("font-size: %1px; font-weight: bold; color: %2;").arg(lfs).arg(g_theme.labelText);
     m_inputLabel->setStyleSheet(labelStyle);
     m_outputLabel->setStyleSheet(labelStyle);
 }
@@ -203,6 +203,9 @@ void PoolingWidget::applyZoom()
 void PoolingWidget::applyTheme()
 {
     clearAnimation();
+
+    // Update main widget background
+    setStyleSheet(QString("background-color: %1;").arg(g_theme.windowBg));
 
     // Update title & description
     m_title->setStyleSheet(g_theme.titleStyle());
@@ -213,6 +216,9 @@ void PoolingWidget::applyTheme()
     m_runBtn->setStyleSheet(g_theme.btnPrimStyle());
     m_resetBtn->setStyleSheet(g_theme.btnSecStyle());
     m_stepInfo->setStyleSheet(QString("color: %1; font-size: 11px;").arg(g_theme.stepInfoColor));
+
+    // Update scroll area style
+    m_scrollArea->setStyleSheet(QString("QScrollArea { border: none; background: %1; }").arg(g_theme.windowBg));
 
     // Update combo box and label styles inside control panel
     const auto combos = m_ctrlFrame->findChildren<QComboBox*>();
@@ -228,7 +234,7 @@ void PoolingWidget::applyTheme()
     m_outputMatrix->applyTheme();
 
     int lfs = std::max(7, int(10 * m_zoomFactor));
-    QString ls = QString("font-size: %1px; font-weight: bold; color: %2;").arg(lfs).arg(g_theme.mutedText);
+    QString ls = QString("font-size: %1px; font-weight: bold; color: %2;").arg(lfs).arg(g_theme.labelText);
     m_inputLabel->setStyleSheet(ls);
     m_outputLabel->setStyleSheet(ls);
 }

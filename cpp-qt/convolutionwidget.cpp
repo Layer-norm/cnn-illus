@@ -22,7 +22,11 @@ QColor MatrixGrid::valueColor(int value, int lo, int hi) const
 {
     double t = std::clamp(double(value - lo) / (hi - lo), 0.0, 1.0);
     double hue = 220.0 - t * 170.0;
-    return QColor::fromHslF(hue / 360.0, 0.6, 0.35);
+    if (g_isDark) {
+        return QColor::fromHslF(hue / 360.0, 0.6, 0.35);
+    } else {
+        return QColor::fromHslF(hue / 360.0, 0.35, 0.82);
+    }
 }
 
 MatrixGrid::MatrixGrid(int rows, int cols, bool editable, bool readOnly, QWidget *parent)
@@ -74,17 +78,19 @@ void MatrixGrid::buildGrid(const QVector<QVector<int>> *data)
             if (m_readOnly) {
                 auto *lbl = new QLabel(QString::number(v), cell);
                 lbl->setAlignment(Qt::AlignCenter);
+                QString tc = g_isDark ? valueColor(v).lighter(150).name() : valueColor(v).darker(250).name();
                 lbl->setStyleSheet(QString("color: %1; font-weight: bold; font-size: %2px; background: transparent;")
-                                   .arg(valueColor(v).lighter(150).name()).arg(fontSize));
+                                   .arg(tc).arg(fontSize));
                 lbl->setGeometry(0, 0, cs, cs);
                 m_labels[i][j] = lbl;
             } else if (m_editable) {
                 auto *entry = new QLineEdit(cell);
                 entry->setText(QString::number(v));
                 entry->setAlignment(Qt::AlignCenter);
+                QString tc = g_isDark ? valueColor(v).lighter(150).name() : valueColor(v).darker(250).name();
                 entry->setStyleSheet(QString(
                     "QLineEdit { background: transparent; color: %1; font-weight: bold; font-size: %2px; border: none; }"
-                ).arg(valueColor(v).lighter(150).name()).arg(fontSize));
+                ).arg(tc).arg(fontSize));
                 entry->setGeometry(2, 2, cs - 4, cs - 4);
                 connect(entry, &QLineEdit::returnPressed, this, [this, entry, i, j, cell, fontSize]() {
                     bool ok;
@@ -93,9 +99,10 @@ void MatrixGrid::buildGrid(const QVector<QVector<int>> *data)
                     if (i < m_data.size() && j < m_data[i].size()) {
                         m_data[i][j] = val;
                     }
+                    QString tc2 = g_isDark ? valueColor(val).lighter(150).name() : valueColor(val).darker(250).name();
                     entry->setStyleSheet(QString(
                         "QLineEdit { background: transparent; color: %1; font-weight: bold; font-size: %2px; border: none; }"
-                    ).arg(valueColor(val).lighter(150).name()).arg(fontSize));
+                    ).arg(tc2).arg(fontSize));
                     cell->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 3px;")
                                         .arg(valueColor(val).name()).arg(g_theme.border));
                     emit cellChanged(i, j, val);
@@ -104,8 +111,9 @@ void MatrixGrid::buildGrid(const QVector<QVector<int>> *data)
             } else {
                 auto *lbl = new QLabel(QString::number(v), cell);
                 lbl->setAlignment(Qt::AlignCenter);
+                QString tc3 = g_isDark ? valueColor(v).lighter(150).name() : valueColor(v).darker(250).name();
                 lbl->setStyleSheet(QString("color: %1; font-weight: bold; font-size: %2px; background: transparent;")
-                                   .arg(valueColor(v).lighter(150).name()).arg(fontSize));
+                                   .arg(tc3).arg(fontSize));
                 lbl->setGeometry(0, 0, cs, cs);
                 m_labels[i][j] = lbl;
             }
@@ -200,11 +208,21 @@ void MatrixGrid::setOutputCell(int r, int c, const QString &text, int value)
     if (lbl) {
         lbl->setText(text);
         int fs = std::max(7, int(11 * m_zoomFactor));
+        double t = std::clamp(double(value + 50) / 100, 0.0, 1.0);
+        double hue = 220.0 - t * 170.0;
+        QColor textColor, bgColor;
+        if (g_isDark) {
+            textColor = QColor::fromHslF(hue / 360.0, 0.7, 0.65);
+            bgColor = QColor::fromHslF(hue / 360.0, 0.6, 0.35);
+        } else {
+            textColor = QColor::fromHslF(hue / 360.0, 0.5, 0.30);
+            bgColor = QColor::fromHslF(hue / 360.0, 0.35, 0.82);
+        }
         lbl->setStyleSheet(QString("color: %1; font-weight: bold; font-size: %2px; background: transparent;")
-                          .arg(QColor::fromHslF(std::clamp(220.0 - std::clamp(double(value + 50) / 100, 0.0, 1.0) * 170.0, 0.0, 360.0) / 360.0, 0.7, 0.65).name()).arg(fs));
+                          .arg(textColor.name()).arg(fs));
+        w->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 3px;")
+                        .arg(bgColor.name()).arg(g_theme.border));
     }
-    w->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 3px;")
-                    .arg(QColor::fromHslF(std::clamp(220.0 - std::clamp(double(value + 50) / 100, 0.0, 1.0) * 170.0, 0.0, 360.0) / 360.0, 0.6, 0.35).name()).arg(g_theme.border));
 }
 
 void MatrixGrid::rebuild(int rows, int cols, const QVector<QVector<int>> *data)
@@ -240,14 +258,22 @@ QString ConvolutionWidget::cellBgColor(int val, int lo, int hi)
 {
     double t = std::clamp(double(val - lo) / (hi - lo), 0.0, 1.0);
     double hue = 220.0 - t * 170.0;
-    return QColor::fromHslF(hue / 360.0, 0.6, 0.35).name();
+    if (g_isDark) {
+        return QColor::fromHslF(hue / 360.0, 0.6, 0.35).name();
+    } else {
+        return QColor::fromHslF(hue / 360.0, 0.35, 0.82).name();
+    }
 }
 
 QString ConvolutionWidget::cellFgColor(int val, int lo, int hi)
 {
     double t = std::clamp(double(val - lo) / (hi - lo), 0.0, 1.0);
     double hue = 220.0 - t * 170.0;
-    return QColor::fromHslF(hue / 360.0, 0.7, 0.65).name();
+    if (g_isDark) {
+        return QColor::fromHslF(hue / 360.0, 0.7, 0.65).name();
+    } else {
+        return QColor::fromHslF(hue / 360.0, 0.5, 0.30).name();
+    }
 }
 
 // ── ConvolutionWidget ──────────────────────────────
@@ -313,18 +339,18 @@ ConvolutionWidget::ConvolutionWidget(QWidget *parent)
     outerLayout->addWidget(m_ctrlFrame);
 
     // Matrix area (scrollable)
-    auto *scrollArea = new QScrollArea(this);
-    scrollArea->setWidgetResizable(true);
-    scrollArea->setStyleSheet("QScrollArea { border: none; background: transparent; }");
-    scrollArea->viewport()->installEventFilter(this);
+    m_scrollArea = new QScrollArea(this);
+    m_scrollArea->setWidgetResizable(true);
+    m_scrollArea->setStyleSheet(QString("QScrollArea { border: none; background: transparent; }"));
+    m_scrollArea->viewport()->installEventFilter(this);
 
-    auto *matrixArea = new QWidget(scrollArea);
+    auto *matrixArea = new QWidget(m_scrollArea);
     m_matrixAreaLayout = new QHBoxLayout(matrixArea);
     m_matrixAreaLayout->setSpacing(20);
     m_matrixAreaLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 
-    scrollArea->setWidget(matrixArea);
-    outerLayout->addWidget(scrollArea);
+    m_scrollArea->setWidget(matrixArea);
+    outerLayout->addWidget(m_scrollArea);
 
     // Input group (custom padded grid built later)
     m_inputGroup = new QWidget(matrixArea);
@@ -546,7 +572,7 @@ void ConvolutionWidget::applyZoom()
 
     // Update label font sizes
     int lfs = std::max(7, int(10 * m_zoomFactor));
-    QString labelStyle = QString("font-size: %1px; font-weight: bold; color: %2;").arg(lfs).arg(g_theme.mutedText);
+    QString labelStyle = QString("font-size: %1px; font-weight: bold; color: %2;").arg(lfs).arg(g_theme.labelText);
     m_inputLabel->setStyleSheet(labelStyle);
     m_kernelLabel->setStyleSheet(labelStyle);
     m_outputLabel->setStyleSheet(labelStyle);
@@ -703,6 +729,9 @@ void ConvolutionWidget::applyTheme()
 {
     clearAnimation();
 
+    // Update main widget background
+    setStyleSheet(QString("background-color: %1;").arg(g_theme.windowBg));
+
     // Update title & description
     m_title->setStyleSheet(g_theme.titleStyle());
     m_desc->setStyleSheet(g_theme.descStyle());
@@ -712,6 +741,9 @@ void ConvolutionWidget::applyTheme()
     m_runBtn->setStyleSheet(g_theme.btnPrimStyle());
     m_resetBtn->setStyleSheet(g_theme.btnSecStyle());
     m_stepInfo->setStyleSheet(QString("color: %1; font-size: 11px;").arg(g_theme.stepInfoColor));
+
+    // Update scroll area style
+    m_scrollArea->setStyleSheet(QString("QScrollArea { border: none; background: %1; }").arg(g_theme.windowBg));
 
     // Update combo box and label styles inside control panel
     const auto combos = m_ctrlFrame->findChildren<QComboBox*>();
@@ -736,7 +768,7 @@ void ConvolutionWidget::applyTheme()
 
     // Update labels
     int lfs = std::max(7, int(10 * m_zoomFactor));
-    QString ls = QString("font-size: %1px; font-weight: bold; color: %2;").arg(lfs).arg(g_theme.mutedText);
+    QString ls = QString("font-size: %1px; font-weight: bold; color: %2;").arg(lfs).arg(g_theme.labelText);
     m_inputLabel->setStyleSheet(ls);
     m_kernelLabel->setStyleSheet(ls);
     m_outputLabel->setStyleSheet(ls);

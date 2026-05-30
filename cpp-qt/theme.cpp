@@ -1,7 +1,7 @@
 #include "theme.h"
 
-Theme g_theme = Theme::dark();
-bool g_isDark = true;
+Theme g_theme = Theme::light();
+bool g_isDark = false;
 
 void toggleTheme()
 {

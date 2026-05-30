@@ -17,6 +17,7 @@ protected:
 private:
     void rebuildContent();
     QWidget *m_contentWidget;
+    QWidget *m_canvas;
 };
 
 #endif // OVERVIEWWIDGET_H

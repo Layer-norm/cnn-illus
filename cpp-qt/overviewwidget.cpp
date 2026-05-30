@@ -15,10 +15,10 @@ OverviewWidget::OverviewWidget(QWidget *parent)
     outerLayout->addWidget(title);
 
     // Architecture canvas
-    auto *canvas = new QWidget(this);
-    canvas->setMinimumHeight(140);
-    canvas->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 8px;").arg(g_theme.baseBg).arg(g_theme.border));
-    outerLayout->addWidget(canvas);
+    m_canvas = new QWidget(this);
+    m_canvas->setMinimumHeight(140);
+    m_canvas->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 8px;").arg(g_theme.baseBg).arg(g_theme.border));
+    outerLayout->addWidget(m_canvas);
 
     // Content container for rebuildable content
     m_contentWidget = new QWidget(this);
@@ -103,14 +103,16 @@ void OverviewWidget::rebuildContent()
 
 void OverviewWidget::applyTheme()
 {
-    // Update the title (just one, easy to find)
+    // Update main widget background
+    setStyleSheet(QString("background-color: %1;").arg(g_theme.windowBg));
+
+    // Update the title
     auto *title = findChild<QLabel*>();
     if (title) title->setStyleSheet(QString("font-size: 16px; font-weight: bold; color: %1;").arg(g_theme.titleText));
 
-    // Update canvas
-    auto *canvas = findChild<QWidget*>();
-    if (canvas && canvas != m_contentWidget) {
-        canvas->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 8px;").arg(g_theme.baseBg).arg(g_theme.border));
+    // Update canvas directly
+    if (m_canvas) {
+        m_canvas->setStyleSheet(QString("background-color: %1; border: 1px solid %2; border-radius: 8px;").arg(g_theme.baseBg).arg(g_theme.border));
     }
 
     // Rebuild content cards and formula

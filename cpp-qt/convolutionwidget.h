@@ -99,6 +99,7 @@ private:
     QVector<QVector<int>> m_inputData;
     int m_currentPad;
     QHBoxLayout *m_matrixAreaLayout;
+    QScrollArea *m_scrollArea;
 
     // Matrices
     MatrixGrid *m_kernelMatrix;

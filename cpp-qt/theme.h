@@ -60,7 +60,7 @@ struct Theme {
 
     // StyleSheet helpers
     QString labelStyle() const {
-        return QString("font-size: 10px; font-weight: bold; color: %1;").arg(mutedText);
+        return QString("font-size: 10px; font-weight: bold; color: %1;").arg(labelText);
     }
     QString descStyle() const {
         return QString("font-size: 11px; color: %1;").arg(mutedText);

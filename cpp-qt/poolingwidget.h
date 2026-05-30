@@ -56,6 +56,9 @@ private:
 
     double m_zoomFactor = 1.0;
 
+    // Display area containers
+    QScrollArea *m_scrollArea;
+
     // Helpers
     void applyZoom();
     bool eventFilter(QObject *obj, QEvent *event) override;
