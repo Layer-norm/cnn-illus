@@ -124,6 +124,7 @@ private:
 
 public:
     void applyTheme();
+    void resetOutputMatrix(int outSize);
 };
 
 #endif // CONVOLUTIONWIDGET_H

@@ -65,6 +65,7 @@ private:
 
 public:
     void applyTheme();
+    void resetOutputMatrix(int outSize);
 };
 
 #endif // POOLINGWIDGET_H

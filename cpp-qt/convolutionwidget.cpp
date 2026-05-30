@@ -484,6 +484,7 @@ void ConvolutionWidget::rebuildInputGrid(int paddedSize, int inputSize, int pad,
 
 void ConvolutionWidget::initMatrices()
 {
+    m_animTotal = 0;
     int inputSize = m_inputSizeCombo->currentText().toInt();
     int ks = m_kernelSizeCombo->currentText().toInt();
     int pad = m_paddingCombo->currentText().toInt();
@@ -530,6 +531,23 @@ void ConvolutionWidget::clearAnimation()
     m_animTimer->stop();
 }
 
+void ConvolutionWidget::resetOutputMatrix(int outSize)
+{
+    m_outputMatrix->rebuild(outSize, outSize);
+    bool hasData = (m_animTotal > 0 && m_animOutput.size() == outSize);
+    for (int i = 0; i < outSize; ++i) {
+        for (int j = 0; j < outSize; ++j) {
+            int idx = i * outSize + j;
+            if (hasData && idx < m_animStep) {
+                int val = m_animOutput[i][j];
+                m_outputMatrix->setOutputCell(i, j, QString::number(val), val);
+            } else {
+                m_outputMatrix->setOutputCell(i, j, "—", 0);
+            }
+        }
+    }
+}
+
 // ── Zoom & event filter ───────────────────────────────
 
 bool ConvolutionWidget::eventFilter(QObject *obj, QEvent *event)
@@ -566,7 +584,7 @@ void ConvolutionWidget::applyZoom()
     m_kernelMatrix->setZoomFactor(m_zoomFactor);
     m_kernelMatrix->rebuild(ks, ks);
     m_outputMatrix->setZoomFactor(m_zoomFactor);
-    m_outputMatrix->rebuild(outSize, outSize);
+    resetOutputMatrix(outSize);
 
     rebuildInputGrid(paddedSize, inputSize, pad, cellSz);
 
@@ -643,7 +661,7 @@ void ConvolutionWidget::runConvolution()
     }
 
     // Reset output matrix
-    m_outputMatrix->rebuild(outSize, outSize);
+    resetOutputMatrix(outSize);
 
     m_animStep = 0;
     m_animTotal = outSize * outSize;
@@ -757,13 +775,17 @@ void ConvolutionWidget::applyTheme()
 
     // Rebuild matrices with new theme colors
     m_kernelMatrix->applyTheme();
-    m_outputMatrix->applyTheme();
 
     int inputSize = m_inputSizeCombo->currentText().toInt();
     int ks = m_kernelSizeCombo->currentText().toInt();
     int pad = m_paddingCombo->currentText().toInt();
+    int stride = m_strideCombo->currentText().toInt();
     int paddedSize = inputSize + 2 * pad;
+    int outSize = (paddedSize - ks) / stride + 1;
     int cellSz = int(MatrixGrid::cellSize(std::max(paddedSize, ks)) * m_zoomFactor);
+
+    m_outputMatrix->setZoomFactor(m_zoomFactor);
+    resetOutputMatrix(outSize);
     rebuildInputGrid(paddedSize, inputSize, pad, cellSz);
 
     // Update labels

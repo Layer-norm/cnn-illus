@@ -127,6 +127,7 @@ void PoolingWidget::onParamChanged()
 
 void PoolingWidget::initMatrices()
 {
+    m_animTotal = 0;
     int inputSize = m_inputSizeCombo->currentText().toInt();
     int ps = m_poolSizeCombo->currentText().toInt();
     int st = m_strideCombo->currentText().toInt();
@@ -156,6 +157,25 @@ void PoolingWidget::initMatrices()
 void PoolingWidget::clearAnimation()
 {
     m_animTimer->stop();
+}
+
+void PoolingWidget::resetOutputMatrix(int outSize)
+{
+    m_outputMatrix->rebuild(outSize, outSize);
+    bool hasData = (m_animTotal > 0 && m_animOutput.size() == outSize);
+    for (int i = 0; i < outSize; ++i) {
+        for (int j = 0; j < outSize; ++j) {
+            int idx = i * outSize + j;
+            if (hasData && idx < m_animStep) {
+                double val = m_animOutput[i][j];
+                m_outputMatrix->setOutputCell(i, j,
+                    QString::number(val, 'f', val == int(val) ? 0 : 1),
+                    static_cast<int>(val));
+            } else {
+                m_outputMatrix->setOutputCell(i, j, "—", 0);
+            }
+        }
+    }
 }
 
 // ── Zoom & event filter ───────────────────────────────
@@ -191,7 +211,7 @@ void PoolingWidget::applyZoom()
     m_inputMatrix->setZoomFactor(m_zoomFactor);
     m_inputMatrix->rebuild(inputSize, inputSize);
     m_outputMatrix->setZoomFactor(m_zoomFactor);
-    m_outputMatrix->rebuild(outSize, outSize);
+    resetOutputMatrix(outSize);
 
     // Update label font sizes
     int lfs = std::max(7, int(10 * m_zoomFactor));
@@ -231,7 +251,14 @@ void PoolingWidget::applyTheme()
     }
 
     m_inputMatrix->applyTheme();
-    m_outputMatrix->applyTheme();
+
+    int inputSize = m_inputSizeCombo->currentText().toInt();
+    int ps = m_poolSizeCombo->currentText().toInt();
+    int st = m_strideCombo->currentText().toInt();
+    int outSize = (inputSize - ps) / st + 1;
+    if (outSize < 1) outSize = 1;
+    m_outputMatrix->setZoomFactor(m_zoomFactor);
+    resetOutputMatrix(outSize);
 
     int lfs = std::max(7, int(10 * m_zoomFactor));
     QString ls = QString("font-size: %1px; font-weight: bold; color: %2;").arg(lfs).arg(g_theme.labelText);
@@ -285,7 +312,7 @@ void PoolingWidget::runPooling()
         }
     }
 
-    m_outputMatrix->rebuild(m_animOutSize, m_animOutSize);
+    resetOutputMatrix(m_animOutSize);
 
     m_animStep = 0;
     m_animTotal = m_animOutSize * m_animOutSize;
